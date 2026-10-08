@@ -630,14 +630,15 @@ allowed the 2FA check to be bypassed.
 
 # 12. Tools Used
 
-  Tool                 Purpose
-  -------------------- ---------------------------------------------------------
-  Nmap                 Port and service enumeration
-  Burp Suite           Request interception, Intruder and request manipulation
-  Browser              Web application interaction
-  Python               Custom SSRF/Gopher proxy
-  Gopher               Raw TCP/HTTP requests through SSRF
-  Directory wordlist   Internal path enumeration
+ | Tool                   | Purpose                                                  |
+| ---------------------- | -------------------------------------------------------- |
+| **Nmap**               | Port and service enumeration                             |
+| **Burp Suite**         | Request interception, Intruder, and request manipulation |
+| **Browser**            | Web application interaction                              |
+| **Python**             | Custom SSRF/Gopher proxy                                 |
+| **Gopher**             | Sending raw TCP/HTTP requests through SSRF               |
+| **Directory Wordlist** | Internal path enumeration                                |
+
 
 ------------------------------------------------------------------------
 
