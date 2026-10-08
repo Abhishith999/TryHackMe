@@ -196,7 +196,7 @@ The enumeration revealed several interesting paths, including:
 
 ![Internal directory enumeration](images/extract-6.png)
 
-`/server-status` returned `403 Forbidden`, so it did not lead anywhere
+`/server-status` shows information about the Apache Server, so it did not lead anywhere
 useful.
 
 `/management`, however, presented a login page.
@@ -734,25 +734,6 @@ A few things in my original approach were worth learning from:
   Python               Custom SSRF/Gopher proxy
   Gopher               Raw TCP/HTTP requests through SSRF
   Directory wordlist   Internal path enumeration
-
-------------------------------------------------------------------------
-
-# 15. References
-
-The overall attack chain in this writeup was cross-checked against
-several public Extract walkthroughs:
-
--   [cbev --- TryHackMe:
-    Extract](https://cbev0x.github.io/tryhackme/2026/03/10/TryHackMe-Extract.html)
-    --- confirms the two exposed ports, SSRF, internal port `10000`,
-    Gopher, Next.js middleware bypass, and cookie-based 2FA bypass.
--   [jaxafed --- TryHackMe:
-    Extract](https://jaxafed.github.io/posts/tryhackme-extract/) ---
-    independently confirms the SSRF → internal application → Gopher →
-    Next.js bypass → management → 2FA chain.
--   [NVD ---
-    CVE-2025-29927](https://nvd.nist.gov/vuln/detail/cve-2025-29927) ---
-    vulnerability details and affected Next.js versions.
 
 ------------------------------------------------------------------------
 
