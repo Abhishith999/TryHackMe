@@ -481,11 +481,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         client_thread.start()
 ```
 
-> **Note:** The original `proxy1.py` I uploaded contained a different
-> hard-coded target IP (`10.48.151.14`). The screenshots for this run
-> use `10.48.171.154`, so the public version uses `<TARGET_IP>` to avoid
-> publishing an inconsistent address.
-
 ![Proxy for the main web service](images/extract-17.png)
 
 I then sent the management login request through the proxy.
