@@ -581,67 +581,7 @@ and returned the second flag.
 
 ------------------------------------------------------------------------
 
-# 11. Attack Chain Summary
-
-The complete attack chain was:
-
-``` text
-External Web Application
-        │
-        ▼
-/preview.php?url=
-        │
-        ▼
-SSRF
-        │
-        ├───────────────► /management
-        │
-        ▼
-127.0.0.1
-        │
-        ▼
-Internal Port Enumeration
-        │
-        ▼
-127.0.0.1:10000
-        │
-        ▼
-/customapi
-        │
-        ▼
-Gopher SSRF Proxy
-        │
-        ▼
-Next.js Middleware
-        │
-        ▼
-CVE-2025-29927
-        │
-        ▼
-Flag 1 + Credentials
-        │
-        ▼
-/management
-        │
-        ▼
-auth_token
-        │
-        ▼
-PHP Serialized Object
-        │
-        ▼
-validated: b:0 → b:1
-        │
-        ▼
-2FA Bypass
-        │
-        ▼
-Flag 2
-```
-
-------------------------------------------------------------------------
-
-# 12. What I Learned
+# 11. What I Learned
 
 ### SSRF is more than just localhost access
 
@@ -693,38 +633,7 @@ allowed the 2FA check to be bypassed.
 
 ------------------------------------------------------------------------
 
-# 13. Mistakes / Dead Ends
-
-A few things in my original approach were worth learning from:
-
-1.  **Trying to force a reverse shell through the initial SSRF**
-
-    The SSRF was primarily a request-fetching primitive. I spent time
-    trying to turn it directly into code execution, but that was not the
-    intended path.
-
-2.  **Spending time on `/management` without credentials**
-
-    The login page gave almost no useful feedback, so brute-forcing
-    common credentials was not productive.
-
-3.  **Ignoring the internal network perspective**
-
-    The important question became:
-
-    > What can the target itself access that I cannot?
-
-    This led to the discovery of port `10000`.
-
-4.  **Hard-coding the target IP in the proxy**
-
-    My original `proxy1.py` contained a different target IP from the one
-    used in this run. For a reusable GitHub project, the target should
-    be configured as a variable or command-line argument.
-
-------------------------------------------------------------------------
-
-# 14. Tools Used
+# 12. Tools Used
 
   Tool                 Purpose
   -------------------- ---------------------------------------------------------
