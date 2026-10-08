@@ -196,7 +196,7 @@ The enumeration revealed several interesting paths, including:
 
 ![Internal directory enumeration](images/extract-6.png)
 
-`/server-status` returned `403 Forbidden`, so it did not lead anywhere
+`/server-status` shows information about the Apache Server, so it did not lead anywhere
 useful.
 
 `/management`, however, presented a login page.
@@ -481,11 +481,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         client_thread.start()
 ```
 
-> **Note:** The original `proxy1.py` I uploaded contained a different
-> hard-coded target IP (`10.48.151.14`). The screenshots for this run
-> use `10.48.171.154`, so the public version uses `<TARGET_IP>` to avoid
-> publishing an inconsistent address.
-
 ![Proxy for the main web service](images/extract-17.png)
 
 I then sent the management login request through the proxy.
@@ -581,67 +576,7 @@ and returned the second flag.
 
 ------------------------------------------------------------------------
 
-# 11. Attack Chain Summary
-
-The complete attack chain was:
-
-``` text
-External Web Application
-        │
-        ▼
-/preview.php?url=
-        │
-        ▼
-SSRF
-        │
-        ├───────────────► /management
-        │
-        ▼
-127.0.0.1
-        │
-        ▼
-Internal Port Enumeration
-        │
-        ▼
-127.0.0.1:10000
-        │
-        ▼
-/customapi
-        │
-        ▼
-Gopher SSRF Proxy
-        │
-        ▼
-Next.js Middleware
-        │
-        ▼
-CVE-2025-29927
-        │
-        ▼
-Flag 1 + Credentials
-        │
-        ▼
-/management
-        │
-        ▼
-auth_token
-        │
-        ▼
-PHP Serialized Object
-        │
-        ▼
-validated: b:0 → b:1
-        │
-        ▼
-2FA Bypass
-        │
-        ▼
-Flag 2
-```
-
-------------------------------------------------------------------------
-
-# 12. What I Learned
+# 11. What I Learned
 
 ### SSRF is more than just localhost access
 
@@ -693,66 +628,17 @@ allowed the 2FA check to be bypassed.
 
 ------------------------------------------------------------------------
 
-# 13. Mistakes / Dead Ends
+# 12. Tools Used
 
-A few things in my original approach were worth learning from:
+ | Tool                   | Purpose                                                  |
+| ---------------------- | -------------------------------------------------------- |
+| **Nmap**               | Port and service enumeration                             |
+| **Burp Suite**         | Request interception, Intruder, and request manipulation |
+| **Browser**            | Web application interaction                              |
+| **Python**             | Custom SSRF/Gopher proxy                                 |
+| **Gopher**             | Sending raw TCP/HTTP requests through SSRF               |
+| **Directory Wordlist** | Internal path enumeration                                |
 
-1.  **Trying to force a reverse shell through the initial SSRF**
-
-    The SSRF was primarily a request-fetching primitive. I spent time
-    trying to turn it directly into code execution, but that was not the
-    intended path.
-
-2.  **Spending time on `/management` without credentials**
-
-    The login page gave almost no useful feedback, so brute-forcing
-    common credentials was not productive.
-
-3.  **Ignoring the internal network perspective**
-
-    The important question became:
-
-    > What can the target itself access that I cannot?
-
-    This led to the discovery of port `10000`.
-
-4.  **Hard-coding the target IP in the proxy**
-
-    My original `proxy1.py` contained a different target IP from the one
-    used in this run. For a reusable GitHub project, the target should
-    be configured as a variable or command-line argument.
-
-------------------------------------------------------------------------
-
-# 14. Tools Used
-
-  Tool                 Purpose
-  -------------------- ---------------------------------------------------------
-  Nmap                 Port and service enumeration
-  Burp Suite           Request interception, Intruder and request manipulation
-  Browser              Web application interaction
-  Python               Custom SSRF/Gopher proxy
-  Gopher               Raw TCP/HTTP requests through SSRF
-  Directory wordlist   Internal path enumeration
-
-------------------------------------------------------------------------
-
-# 15. References
-
-The overall attack chain in this writeup was cross-checked against
-several public Extract walkthroughs:
-
--   [cbev --- TryHackMe:
-    Extract](https://cbev0x.github.io/tryhackme/2026/03/10/TryHackMe-Extract.html)
-    --- confirms the two exposed ports, SSRF, internal port `10000`,
-    Gopher, Next.js middleware bypass, and cookie-based 2FA bypass.
--   [jaxafed --- TryHackMe:
-    Extract](https://jaxafed.github.io/posts/tryhackme-extract/) ---
-    independently confirms the SSRF → internal application → Gopher →
-    Next.js bypass → management → 2FA chain.
--   [NVD ---
-    CVE-2025-29927](https://nvd.nist.gov/vuln/detail/cve-2025-29927) ---
-    vulnerability details and affected Next.js versions.
 
 ------------------------------------------------------------------------
 
