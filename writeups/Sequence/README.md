@@ -219,8 +219,6 @@ After returning to the shell, I pressed `Enter` if needed.
 
 ### 8.2 Start a container with the host filesystem mounted
 
-The commands I used are also preserved in [`cmds.txt`](cmds.txt):
-
 ```bash
 docker run -it --rm -v /:/host phpvulnerable:latest /bin/sh
 ```
