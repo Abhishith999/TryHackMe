@@ -185,7 +185,7 @@ I uploaded a normal file first and observed where the application stored uploade
 
 I then prepared a PHP reverse shell, configured its callback IP address and port for my attack machine, and uploaded it through the Finance panel. I started a listener on the matching port and triggered the uploaded PHP file through the application's feature/request flow.
 
-The connection succeeded and gave me a shell as `root` **inside the Docker container**.
+The connection succeeded and gave me a shell as `root`.
 
 ![Reverse-shell setup](screenshots/sequence-20.png)
 
