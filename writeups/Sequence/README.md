@@ -46,18 +46,7 @@ One important finding was that the `PHPSESSID` cookie did **not** have the `Http
 
 I also ran directory enumeration with Gobuster. One particularly useful discovery was `/mail/dump.txt`.
 
-
-### Website review
-
-The website had a login page and a Contact Us page. I checked the pages and their source, but did not notice an obvious issue at that point. I tried common credentials on the login page, but they did not work, so I continued investigating the contact form.
-
-![Review Shop landing page](screenshots/sequence-2.png)
-
-![Login page](screenshots/sequence-3.png)
-
-![Contact form](screenshots/sequence-4.png)
-
-## 3. Finding the Leaked Email
+### Finding the Leaked Email
 
 The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. The password recorded in public walkthroughs is `S60**f5j`; check it against the value shown in your own active room instance.
 
@@ -71,7 +60,17 @@ I saved these details for later because the features were not directly available
 
 ![Email dump with internal feature details](screenshots/sequence-10.png)
 
-## 4. Stored XSS and Moderator Session
+### Website review
+
+The website had a login page and a Contact Us page. I checked the pages and their source, but did not notice an obvious issue at that point. I tried common credentials on the login page, but they did not work, so I continued investigating the contact form.
+
+![Review Shop landing page](screenshots/sequence-2.png)
+
+![Login page](screenshots/sequence-3.png)
+
+![Contact form](screenshots/sequence-4.png)
+
+## 3. Stored XSS and Moderator Session
 
 I submitted a normal message through the Contact Us form. After submission, the page indicated that someone would review the message.
 
@@ -100,7 +99,7 @@ The dashboard exposed additional functionality, including Settings and Chat. I o
 
 ![Moderator settings panel](screenshots/sequence-8.png)
 
-## 5. Understanding the Promotion Token
+## 4. Understanding the Promotion Token
 
 The Settings page included a feature for promoting a user to co-admin. The promotion action was restricted to an administrator in the interface, so I examined how the request worked.
 
@@ -131,7 +130,7 @@ I used a hash generator / hash-checking tools on Windows to verify the value. Th
 
 ![MD5 value check for admin](screenshots/sequence-14.png)
 
-## 6. Promoting the Moderator to Admin
+## 5. Promoting the Moderator to Admin
 
 I next explored the Chat feature. A straightforward XSS payload was blocked by the application, so I tried a different approach: sending a link that the administrator would open.
 
@@ -165,7 +164,7 @@ The request promoted `mod` to admin. I then returned to the dashboard and confir
 
 > **Why this worked:** The promotion endpoint changed account privileges through a GET request, and the CSRF token was predictable. A request that changes state should not be implemented as a simple GET action, and a CSRF token should be unpredictable and bound to the user's session.
 
-## 7. Accessing the Finance Feature
+## 6. Accessing the Finance Feature
 
 After obtaining admin access, I explored the dashboard and noticed the Lottery feature. The email found earlier mentioned a separate Finance feature, so I intercepted the request generated when selecting Lottery.
 
@@ -187,7 +186,7 @@ This caused the application to load the Finance feature instead of Lottery. The 
 
 ![Intercepted request with the feature parameter changed](screenshots/sequence-19.png)
 
-## 8. File Upload and Reverse Shell
+## 7. File Upload and Reverse Shell
 
 I uploaded a normal file first and observed where the application stored uploaded files. Knowing the upload location helped me plan the next step.
 
@@ -203,11 +202,11 @@ At first, I expected to find the final flag from this shell, but I could not loc
 
 This was the point where I needed to understand the container environment rather than continue searching only inside the current container.
 
-## 9. Understanding the Docker Escape
+## 8. Understanding the Docker Escape
 
 I had to research this stage because I was not familiar with the Docker escape technique when I first reached it. The key was that the environment allowed Docker commands to be run from inside the compromised container, and the Docker image used by the room was available locally.
 
-### 9.1 Upgrade the shell to an interactive TTY
+### 8.1 Upgrade the shell to an interactive TTY
 
 The reverse shell was not a fully interactive terminal. I used the following commands to improve terminal interaction:
 
@@ -223,7 +222,7 @@ stty raw -echo && fg
 
 After returning to the shell, I pressed `Enter` if needed.
 
-### 9.2 Start a container with the host filesystem mounted
+### 8.2 Start a container with the host filesystem mounted
 
 The commands I used are also preserved in [`cmds.txt`](cmds.txt):
 
@@ -258,7 +257,7 @@ This revealed the **third flag**, completing the room.
 
 > **Technical note:** The root cause is not necessarily a bug in a particular Docker version. Exposing Docker daemon access or its socket to a compromised container is a dangerous configuration because that access can allow container creation and host filesystem mounts. Other public walkthroughs use Docker API requests or a different image, but the underlying weakness is similar.
 
-## 10. Tools Used
+## 9. Tools Used
 
 | Tool | Purpose |
 |---|---|
@@ -271,7 +270,7 @@ This revealed the **third flag**, completing the room.
 | **PHP reverse shell** | Obtaining a shell through the upload feature |
 | **Docker CLI** | Starting a container with the host filesystem mounted |
 
-## 11. What I Learned and Technical Notes
+## 10. What I Learned and Technical Notes
 
 - A state-changing GET endpoint combined with weak CSRF protection can allow an administrator's browser to perform an action simply by following a link.
 - The `feature` parameter was important because changing it exposed a feature that was not available through the normal dashboard flow.
