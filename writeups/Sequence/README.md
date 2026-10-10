@@ -179,8 +179,6 @@ This caused the application to load the Finance feature instead of Lottery. The 
 
 ![Finance panel and upload feature](screenshots/sequence-18.png)
 
-![Intercepted request with the feature parameter changed](screenshots/sequence-19.png)
-
 ## 7. File Upload and Reverse Shell
 
 I uploaded a normal file first and observed where the application stored uploaded files. Knowing the upload location helped me plan the next step.
@@ -190,6 +188,8 @@ I then prepared a PHP reverse shell, configured its callback IP address and port
 The connection succeeded and gave me a shell as `root` **inside the Docker container**.
 
 ![Reverse-shell setup](screenshots/sequence-20.png)
+
+![Reverse-shell-execution](screenshots/sequence-19.png)
 
 ![Shell obtained from the uploaded PHP file](screenshots/sequence-21.png)
 
