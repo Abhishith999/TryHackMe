@@ -5,22 +5,7 @@
 > **Scope:** TryHackMe lab environment  
 > **Objective:** Chain the discovered web vulnerabilities to retrieve all three flags.
 
-This write-up documents my route through the room, including the ideas I tested, the steps that worked, and what I learned while researching the Docker stage. Screenshots are included beside the relevant steps.
-
-## Table of Contents
-
-1. [Initial Setup](#1-initial-setup)
-2. [Port and Web Enumeration](#2-port-and-web-enumeration)
-3. [Finding the Leaked Email](#3-finding-the-leaked-email)
-4. [Stored XSS and Moderator Session](#4-stored-xss-and-moderator-session)
-5. [Understanding the Promotion Token](#5-understanding-the-promotion-token)
-6. [Promoting the Moderator to Admin](#6-promoting-the-moderator-to-admin)
-7. [Accessing the Finance Feature](#7-accessing-the-finance-feature)
-8. [File Upload and Reverse Shell](#8-file-upload-and-reverse-shell)
-9. [Understanding the Docker Escape](#9-understanding-the-docker-escape)
-10. [Attack Chain Summary](#10-attack-chain-summary)
-11. [Tools Used](#11-tools-used)
-12. [What I Learned and Technical Notes](#12-what-i-learned-and-technical-notes)
+This write-up documents my route through the room, including the ideas I tested, the steps that worked, and what I learned while researching. Screenshots are included beside the relevant steps.
 
 ---
 
@@ -273,20 +258,7 @@ This revealed the **third flag**, completing the room.
 
 > **Technical note:** The root cause is not necessarily a bug in a particular Docker version. Exposing Docker daemon access or its socket to a compromised container is a dangerous configuration because that access can allow container creation and host filesystem mounts. Other public walkthroughs use Docker API requests or a different image, but the underlying weakness is similar.
 
-## 10. Attack Chain Summary
-
-| Stage | Finding / technique | Result |
-|---|---|---|
-| 1 | Nmap and directory enumeration | Found exposed web service and `/mail/dump.txt` |
-| 2 | Information disclosure | Learned about internal features and obtained the Finance password |
-| 3 | Stored XSS + missing `HttpOnly` | Captured the moderator's session cookie |
-| 4 | Predictable MD5-based CSRF token | Prepared a promotion request for the moderator account |
-| 5 | Admin-triggered redirect to a state-changing GET endpoint | Promoted `mod` to admin |
-| 6 | Feature parameter tampering | Accessed the Finance panel |
-| 7 | Unrestricted / insufficiently validated file upload | Achieved code execution and a reverse shell in the container |
-| 8 | Docker access + host filesystem bind mount | Accessed the host's root flag |
-
-## 11. Tools Used
+## 10. Tools Used
 
 | Tool | Purpose |
 |---|---|
@@ -299,10 +271,8 @@ This revealed the **third flag**, completing the room.
 | **PHP reverse shell** | Obtaining a shell through the upload feature |
 | **Docker CLI** | Starting a container with the host filesystem mounted |
 
-## 12. What I Learned and Technical Notes
+## 11. What I Learned and Technical Notes
 
-- A missing `HttpOnly` cookie attribute increases the impact of XSS because JavaScript can read the cookie. It does not create the XSS vulnerability by itself.
-- A hash is not encryption. The promotion token was predictable because it matched `MD5(username)`, so testing a known username was more useful than trying to “decode” the token.
 - A state-changing GET endpoint combined with weak CSRF protection can allow an administrator's browser to perform an action simply by following a link.
 - The `feature` parameter was important because changing it exposed a feature that was not available through the normal dashboard flow.
 - A successful root shell inside a container does not automatically mean the host has been compromised. I needed to identify the container boundary and investigate how Docker was exposed.
