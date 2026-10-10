@@ -123,8 +123,6 @@ For example, the MD5 hash of `admin` is:
 
 I used hashcat tool on Windows to verify the value. The key issue was that the token was predictable because it was derived from a known username, rather than being a random, session-bound CSRF token.
 
-![Promotion request / application source inspection](screenshots/sequence-12.png)
-
 ![Hashcat confirmed the MD5 token for mod](screenshots/hashcat-md5-token.png)
 
 ![MD5 value check for admin](screenshots/sequence-14.png)
