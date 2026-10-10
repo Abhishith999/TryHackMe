@@ -155,10 +155,6 @@ I hosted the page and sent its link through Chat. When the administrator opened 
 
 The request promoted `mod` to admin. I then returned to the dashboard and confirmed that the role change had taken effect. This gave me access to the **second flag**.
 
-![Chat feature](screenshots/sequence-9.png)
-
-![Request details in the proxy](screenshots/sequence-17.png)
-
 ![Dashboard after the role change](screenshots/sequence-16.png)
 
 > **Why this worked:** The promotion endpoint changed account privileges through a GET request, and the CSRF token was predictable. A request that changes state should not be implemented as a simple GET action, and a CSRF token should be unpredictable and bound to the user's session.
@@ -178,6 +174,8 @@ to:
 ```text
 finance.php
 ```
+
+![Request details in the proxy](screenshots/sequence-17.png)
 
 This caused the application to load the Finance feature instead of Lottery. The panel requested the password disclosed in `/mail/dump.txt`; after entering it, I gained access to the Finance page and its file-upload functionality.
 
