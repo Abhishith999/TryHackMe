@@ -61,7 +61,6 @@ One important finding was that the `PHPSESSID` cookie did **not** have the `Http
 
 I also ran directory enumeration with Gobuster. One particularly useful discovery was `/mail/dump.txt`.
 
-![Directory enumeration output](screenshots/sequence-6.png)
 
 ### Website review
 
@@ -75,7 +74,7 @@ The website had a login page and a Contact Us page. I checked the pages and thei
 
 ## 3. Finding the Leaked Email
 
-The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. The password recorded in public walkthroughs is `S60u}f5j`; check it against the value shown in your own active room instance.
+The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. The password recorded in public walkthroughs is `S60**f5j`; check it against the value shown in your own active room instance.
 
 The important details were:
 
