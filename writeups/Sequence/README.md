@@ -23,7 +23,7 @@ Add the following entry, replacing `<TARGET_IP>` with the IP address assigned to
 <TARGET_IP> review.thm
 ```
 
-I then opened the site using `http://review.thm`.
+Now i can open the site using `http://review.thm`.
 
 ## 2. Port and Web Enumeration
 
