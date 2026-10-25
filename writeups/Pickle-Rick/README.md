@@ -145,7 +145,23 @@ The portal source also showed that the command form submitted a `command` value 
 
 ![Portal source code](screenshots/pickle-rick-16.png)
 
-## 7. Ingredient 1 — Read the First File
+## 7. Decode the Base64 Comment
+
+I returned to the page source and noticed another HTML comment containing a Base64-encoded value. I used Burp Suite's Decoder to decode the value repeatedly until it produced readable text.
+
+The final decoded text was:
+
+```text
+rabbit hole
+```
+
+![Repeated Base64 decoding in Burp Suite](screenshots/pickle-rick-17.png)
+
+![Final decoded value](screenshots/pickle-rick-18.png)
+
+I noted the result, but it did not lead to another useful location in my route. Public walkthroughs also describe this value as a rabbit hole, so I moved on rather than spending more time on it.
+
+## 8. Ingredient 1 — Read the First File
 
 I started by listing the files available in the command panel.
 
@@ -189,22 +205,6 @@ mr. meeseek hair
 The portal also displayed a clue telling me to look around the filesystem for the next ingredient.
 
 ![Filesystem enumeration clue](screenshots/pickle-rick-11.png)
-
-## 8. Decode the Base64 Comment
-
-I returned to the page source and noticed another HTML comment containing a Base64-encoded value. I used Burp Suite's Decoder to decode the value repeatedly until it produced readable text.
-
-The final decoded text was:
-
-```text
-rabbit hole
-```
-
-![Repeated Base64 decoding in Burp Suite](screenshots/pickle-rick-17.png)
-
-![Final decoded value](screenshots/pickle-rick-18.png)
-
-I noted the result, but it did not lead to another useful location in my route. Public walkthroughs also describe this value as a rabbit hole, so I moved on rather than spending more time on it.
 
 ## 9. Ingredient 2 — Explore Rick's Home Directory
 
