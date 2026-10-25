@@ -186,7 +186,7 @@ I tried reading the first ingredient with common commands such as `cat`, but the
 
 ![Command-panel restriction message](screenshots/pickle-rick-9.png)
 
-I remembered the `tac` command from another TryHackMe room. `tac` prints a file in reverse line order, so it can sometimes be used as an alternative when `cat` is blocked.
+I remembered the `tac` command from a TryHackMe room i completed earlier. `tac` prints a file in reverse line order, so it can sometimes be used as an alternative when `cat` is blocked.
 
 **Command that worked:**
 
