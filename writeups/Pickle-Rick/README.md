@@ -208,7 +208,7 @@ The portal also displayed a clue telling me to look around the filesystem for th
 
 ## 9. Ingredient 2 — Explore Rick's Home Directory
 
-I continued enumerating the filesystem from the command panel. I first checked Rick's home directory and listed its contents.
+I continued enumerating the filesystem from the command panel. While checking common directories where the flags should present,i found Rick's home directory and listed its contents.
 
 **Command used:**
 
