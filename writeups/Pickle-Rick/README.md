@@ -5,26 +5,7 @@
 > **Target hostname:** `pickle-rick.thm`  
 > **Objective:** Find the three ingredients needed to help Rick reverse the pickle transformation.
 
-This write-up follows my actual route through the room. It includes the enumeration steps, the unsuccessful SSH brute-force attempt, the command-panel restrictions, the useful `tac` alternative, and the final privilege escalation through misconfigured `sudo` permissions.
-
-## Table of Contents
-
-1. [Set Up the Target Hostname](#1-set-up-the-target-hostname)
-2. [Nmap Scan](#2-nmap-scan)
-3. [Inspect the Website and Source Code](#3-inspect-the-website-and-source-code)
-4. [Directory Enumeration](#4-directory-enumeration)
-5. [Testing SSH Access](#5-testing-ssh-access)
-6. [Log In to the Rick Portal](#6-log-in-to-the-rick-portal)
-7. [Ingredient 1 — Read the First File](#7-ingredient-1--read-the-first-file)
-8. [Decode the Base64 Comment](#8-decode-the-base64-comment)
-9. [Ingredient 2 — Explore Rick's Home Directory](#9-ingredient-2--explore-ricks-home-directory)
-10. [Ingredient 3 — Check Sudo Permissions](#10-ingredient-3--check-sudo-permissions)
-11. [Commands Used — Quick Reference](#11-commands-used--quick-reference)
-12. [Tools Used](#12-tools-used)
-13. [Comparison with Public Walkthroughs](#13-comparison-with-public-walkthroughs)
-14. [Key Takeaways](#14-key-takeaways)
-
----
+This write-up follows my actual route through the room.
 
 ## 1. Set Up the Target Hostname
 
@@ -85,7 +66,27 @@ This was useful information, so I saved it for later.
 
 ![Username found in page source](screenshots/pickle-rick-3.png)
 
-## 4. Directory Enumeration
+## 4. Testing SSH Access
+
+Since I had found a username, my first thought was to test whether it could be used to log in over SSH. I tried Hydra with the `rockyou.txt` password list.
+
+**Command attempted:**
+
+```bash
+hydra -l R1ckRul3s -P rockyou.txt ssh://pickle-rick.thm
+```
+
+The attempt did not proceed because the SSH service reported that password authentication was not supported:
+
+```text
+target ssh://<TARGET_IP>:22/ does not support password authentication
+```
+
+The SSH service did not offer password authentication, so I stopped pursuing SSH brute force and returned to web enumeration.
+
+![SSH password-authentication attempt](screenshots/pickle-rick-7.png)
+
+## 5. Directory Enumeration
 
 Next, I ran Gobuster to discover files and directories that were not linked from the homepage.
 
@@ -126,26 +127,6 @@ Wubbalubbadubdub
 I treated it as a possible password and kept it alongside the username found in the page source.
 
 ![String found in robots.txt](screenshots/pickle-rick-5.png)
-
-## 5. Testing SSH Access
-
-Since I had found a username, my first thought was to test whether it could be used to log in over SSH. I tried Hydra with the `rockyou.txt` password list.
-
-**Command attempted:**
-
-```bash
-hydra -l R1ckRul3s -P rockyou.txt ssh://pickle-rick.thm
-```
-
-The attempt did not proceed because the SSH service reported that password authentication was not supported:
-
-```text
-target ssh://<TARGET_IP>:22/ does not support password authentication
-```
-
-The SSH service did not offer password authentication, so I stopped pursuing SSH brute force and returned to web enumeration.
-
-![SSH password-authentication attempt](screenshots/pickle-rick-7.png)
 
 ## 6. Log In to the Rick Portal
 
