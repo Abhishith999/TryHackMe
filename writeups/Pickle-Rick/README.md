@@ -143,7 +143,7 @@ The attempt did not proceed because the SSH service reported that password authe
 target ssh://<TARGET_IP>:22/ does not support password authentication
 ```
 
-This was not simply a case of the password being incorrect. The SSH service did not offer password authentication, so I stopped pursuing SSH brute force and returned to web enumeration.
+The SSH service did not offer password authentication, so I stopped pursuing SSH brute force and returned to web enumeration.
 
 ![SSH password-authentication attempt](screenshots/pickle-rick-7.png)
 
