@@ -5,26 +5,7 @@
 > **Target hostname:** `pickle-rick.thm`  
 > **Objective:** Find the three ingredients needed to help Rick reverse the pickle transformation.
 
-This write-up follows my actual route through the room. It includes the enumeration steps, the unsuccessful SSH brute-force attempt, the command-panel restrictions, the useful `tac` alternative, and the final privilege escalation through misconfigured `sudo` permissions.
-
-## Table of Contents
-
-1. [Set Up the Target Hostname](#1-set-up-the-target-hostname)
-2. [Nmap Scan](#2-nmap-scan)
-3. [Inspect the Website and Source Code](#3-inspect-the-website-and-source-code)
-4. [Directory Enumeration](#4-directory-enumeration)
-5. [Testing SSH Access](#5-testing-ssh-access)
-6. [Log In to the Rick Portal](#6-log-in-to-the-rick-portal)
-7. [Ingredient 1 — Read the First File](#7-ingredient-1--read-the-first-file)
-8. [Decode the Base64 Comment](#8-decode-the-base64-comment)
-9. [Ingredient 2 — Explore Rick's Home Directory](#9-ingredient-2--explore-ricks-home-directory)
-10. [Ingredient 3 — Check Sudo Permissions](#10-ingredient-3--check-sudo-permissions)
-11. [Commands Used — Quick Reference](#11-commands-used--quick-reference)
-12. [Tools Used](#12-tools-used)
-13. [Comparison with Public Walkthroughs](#13-comparison-with-public-walkthroughs)
-14. [Key Takeaways](#14-key-takeaways)
-
----
+This write-up follows my actual route through the room.
 
 ## 1. Set Up the Target Hostname
 
@@ -85,7 +66,27 @@ This was useful information, so I saved it for later.
 
 ![Username found in page source](screenshots/pickle-rick-3.png)
 
-## 4. Directory Enumeration
+## 4. Testing SSH Access
+
+Since I had found a username, my first thought was to test whether it could be used to log in over SSH. I tried Hydra with the `rockyou.txt` password list.
+
+**Command attempted:**
+
+```bash
+hydra -l R1ckRul3s -P rockyou.txt ssh://pickle-rick.thm
+```
+
+The attempt did not proceed because the SSH service reported that password authentication was not supported:
+
+```text
+target ssh://<TARGET_IP>:22/ does not support password authentication
+```
+
+The SSH service did not offer password authentication, so I stopped pursuing SSH brute force and returned to web enumeration.
+
+![SSH password-authentication attempt](screenshots/pickle-rick-7.png)
+
+## 5. Directory Enumeration
 
 Next, I ran Gobuster to discover files and directories that were not linked from the homepage.
 
@@ -127,26 +128,6 @@ I treated it as a possible password and kept it alongside the username found in 
 
 ![String found in robots.txt](screenshots/pickle-rick-5.png)
 
-## 5. Testing SSH Access
-
-Since I had found a username, my first thought was to test whether it could be used to log in over SSH. I tried Hydra with the `rockyou.txt` password list.
-
-**Command attempted:**
-
-```bash
-hydra -l R1ckRul3s -P rockyou.txt ssh://pickle-rick.thm
-```
-
-The attempt did not proceed because the SSH service reported that password authentication was not supported:
-
-```text
-target ssh://<TARGET_IP>:22/ does not support password authentication
-```
-
-This was not simply a case of the password being incorrect. The SSH service did not offer password authentication, so I stopped pursuing SSH brute force and returned to web enumeration.
-
-![SSH password-authentication attempt](screenshots/pickle-rick-7.png)
-
 ## 6. Log In to the Rick Portal
 
 Using the username from the HTML source and the string from `robots.txt`, I logged in through the web portal.
@@ -164,7 +145,23 @@ The portal source also showed that the command form submitted a `command` value 
 
 ![Portal source code](screenshots/pickle-rick-16.png)
 
-## 7. Ingredient 1 — Read the First File
+## 7. Decode the Base64 Comment
+
+I noticed HTML comment containing a Base64-encoded value. I used Decoder to decode the value repeatedly until it produced readable text.
+
+The final decoded text was:
+
+```text
+rabbit hole
+```
+
+![Repeated Base64 decoding in Burp Suite](screenshots/pickle-rick-17.png)
+
+![Final decoded value](screenshots/pickle-rick-18.png)
+
+I noted the result, but it did not lead to another useful location in my route. so I moved on rather than spending more time on it.
+
+## 8. Ingredient 1 — Read the First File
 
 I started by listing the files available in the command panel.
 
@@ -189,7 +186,7 @@ I tried reading the first ingredient with common commands such as `cat`, but the
 
 ![Command-panel restriction message](screenshots/pickle-rick-9.png)
 
-I remembered the `tac` command from another TryHackMe room. `tac` prints a file in reverse line order, so it can sometimes be used as an alternative when `cat` is blocked.
+I remembered the `tac` command from a TryHackMe room i completed earlier. `tac` prints a file in reverse line order, so it can sometimes be used as an alternative when `cat` is blocked.
 
 **Command that worked:**
 
@@ -209,25 +206,9 @@ The portal also displayed a clue telling me to look around the filesystem for th
 
 ![Filesystem enumeration clue](screenshots/pickle-rick-11.png)
 
-## 8. Decode the Base64 Comment
-
-I returned to the page source and noticed another HTML comment containing a Base64-encoded value. I used Burp Suite's Decoder to decode the value repeatedly until it produced readable text.
-
-The final decoded text was:
-
-```text
-rabbit hole
-```
-
-![Repeated Base64 decoding in Burp Suite](screenshots/pickle-rick-17.png)
-
-![Final decoded value](screenshots/pickle-rick-18.png)
-
-I noted the result, but it did not lead to another useful location in my route. Public walkthroughs also describe this value as a rabbit hole, so I moved on rather than spending more time on it.
-
 ## 9. Ingredient 2 — Explore Rick's Home Directory
 
-I continued enumerating the filesystem from the command panel. I first checked Rick's home directory and listed its contents.
+I continued enumerating the filesystem from the command panel. While checking common directories where the flags should present,i found Rick's home directory and listed its contents.
 
 **Command used:**
 
@@ -308,84 +289,7 @@ fleeb juice
 
 With all three ingredients found, I completed the Pickle Rick room.
 
-## 11. Commands Used — Quick Reference
-
-This section gathers the commands from the steps above in one place. The SSH and Gobuster commands are included separately because they were part of the actual enumeration route.
-
-### Hostname setup
-
-```bash
-sudo nano /etc/hosts
-```
-
-Add:
-
-```text
-<TARGET_IP> pickle-rick.thm
-```
-
-### Nmap
-
-```bash
-nmap -sC -sV -o nmap_scan.txt pickle-rick.thm
-```
-
-### SSH brute-force attempt that did not work
-
-```bash
-hydra -l R1ckRul3s -P rockyou.txt ssh://pickle-rick.thm
-```
-
-Reason: the SSH service did not support password authentication.
-
-### Gobuster
-
-```bash
-gobuster dir -u http://pickle-rick.thm/ -w big.txt -x js,json,html,php,php.php,txt --no-error
-```
-
-### Commands entered in the web command panel
-
-```bash
-ls
-```
-
-```bash
-tac Sup3rS3cretPickl3Ingred.txt
-```
-
-```bash
-cd /home/rick && ls -lah
-```
-
-```bash
-tac /home/rick/second\ ingredients
-```
-
-```bash
-sudo -l
-```
-
-```bash
-sudo ls /root
-```
-
-```bash
-sudo tac /root/3rd.txt
-```
-
-### Manual browser checks
-
-These were visited in the browser rather than run as terminal commands:
-
-```text
-http://pickle-rick.thm/
-http://pickle-rick.thm/robots.txt
-http://pickle-rick.thm/login.php
-http://pickle-rick.thm/portal.php
-```
-
-## 12. Tools Used
+## 11. Tools Used
 
 | Tool | Purpose |
 |---|---|
@@ -398,28 +302,7 @@ http://pickle-rick.thm/portal.php
 | **Linux `tac`** | Reading files when common file-reading commands were blocked |
 | **`sudo`** | Checking and using the current user's elevated command permissions |
 
-## 13. Comparison with Public Walkthroughs
-
-I compared my route with the official TryHackMe room description and several public walkthroughs. The overall path matches the common solution:
-
-1. Find the username in the homepage source.
-2. Find the password-like value in `robots.txt`.
-3. Discover and log in to the portal.
-4. Use the command panel to read the first ingredient.
-5. Find the second ingredient in `/home/rick`.
-6. Check `sudo -l` and use the unrestricted passwordless sudo permission to read the root ingredient.
-
-A few details are worth clarifying:
-
-- **SSH:** My Hydra attempt failed because the service did not support password authentication. This is a service configuration issue, not proof that the credentials were wrong.
-- **Blocked file-reading commands:** Public walkthroughs use different alternatives, including `less`, `strings`, and `tac`. My screenshots show that I used `tac`.
-- **Rabbit-hole comment:** Repeated Base64 decoding produced `rabbit hole`. It was not necessary to obtain the three ingredients in my route.
-- **Second ingredient filename:** The screenshot shows `second ingredients` with a space, so the command must handle that space.
-- **Privilege escalation:** The decisive finding was `(ALL) NOPASSWD: ALL` for `www-data`. This allowed commands such as `sudo ls /root` and `sudo tac /root/3rd.txt` without needing a separate exploit.
-
-The room does not require a reverse shell for this route; the web command panel and the sudo misconfiguration were sufficient to retrieve all three ingredients.
-
-## 14. Key Takeaways
+## 12. Key Takeaways
 
 - Review page source for comments and information that is not visible on the rendered page.
 - Check `robots.txt` during web enumeration; it may expose sensitive strings or paths.
@@ -427,7 +310,6 @@ The room does not require a reverse shell for this route; the web command panel 
 - Read error messages carefully. Hydra's output showed that SSH password authentication was unavailable, so continuing to brute force passwords over SSH would not help.
 - If a command is blocked, understand the intended operation and look for a legitimate alternative. In this room, `tac` could read the files when `cat`, `head`, and `tail` were blocked.
 - Always run `sudo -l` when assessing local privilege escalation. Passwordless permission to run every command as root is a critical misconfiguration.
-- Keep track of the commands that worked, the attempts that failed, and the reason for each decision. That makes the final write-up more useful than a list of flags alone.
 
 ### Final Summary
 
