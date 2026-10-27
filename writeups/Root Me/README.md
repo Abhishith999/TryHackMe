@@ -4,24 +4,6 @@ A practical walkthrough of the **RootMe** room, covering web enumeration, an upl
 
 > **Scope:** This write-up documents my own path and the commands visible in my screenshots. Run these steps only against the TryHackMe target assigned to your account or another system you are authorized to test.
 
-## Contents
-
-1. [Add the target hostname](#1-add-the-target-hostname)
-2. [Nmap scan](#2-nmap-scan)
-3. [Manual website enumeration](#3-manual-website-enumeration)
-4. [Gobuster directory enumeration](#4-gobuster-directory-enumeration)
-5. [Inspect the upload panel](#5-inspect-the-upload-panel)
-6. [Bypass the PHP extension filter with `.phtml`](#6-bypass-the-php-extension-filter-with-phtml)
-7. [Prepare and upload the reverse shell](#7-prepare-and-upload-the-reverse-shell)
-8. [Catch the reverse shell](#8-catch-the-reverse-shell)
-9. [Find the user flag](#9-find-the-user-flag)
-10. [Enumerate SUID binaries](#10-enumerate-suid-binaries)
-11. [Escalate privileges with SUID Python](#11-escalate-privileges-with-suid-python)
-12. [Quick command reference](#12-quick-command-reference)
-13. [Comparison with public write-ups and corrections](#13-comparison-with-public-write-ups-and-corrections)
-14. [Tools used](#14-tools-used)
-15. [Key takeaways](#15-key-takeaways)
-
 ## 1. Add the target hostname
 
 I first mapped the target IP to `root-me.thm` in `/etc/hosts`. This lets me use the hostname instead of typing the current target IP in every request. The IP assigned by TryHackMe can change when a machine is restarted, so use the IP shown in your own deployment.
@@ -239,26 +221,7 @@ cat root.txt
 ```
 
 
-## 13. Comparison with public write-ups and corrections
-
-I compared my route with public RootMe write-ups, including the common `.phtml`/`.php5` upload bypass and SUID Python escalation.
-
-| Topic | My screenshots | Common public walkthroughs | Correction / note |
-|---|---|---|---|
-| Enumeration | `nmap -sC -sV` found ports 22 and 80; Gobuster found `/panel/` and `/uploads/`. | Most write-ups find the same services and paths, though some use a full-port scan or a different wordlist. | My scan is valid for the observed result, but it is not a full 65,535-port scan. A full-port scan could identify services outside Nmap's default top ports. |
-| Upload bypass | Tried `.php`, which was rejected; used `.phtml` for the successful upload. | Public walkthroughs commonly use `.phtml` or `.php5`, depending on the target configuration. | The successful method in this write-up is `.phtml`. Screenshots 7–8 show a separate `.htaccess`/`.cybersec` experiment and are not evidence of the successful upload. |
-| Reverse shell | Netcat listener on 4444; shell as `www-data`. | Same general foothold and account. Some guides stabilize the shell with a PTY. | My screenshots do not show a PTY upgrade, so I have not claimed one. A raw shell may have limited terminal functionality. |
-| User flag | Found `/var/www/user.txt` with `find`. | Same path in the sources reviewed. | The command and path are consistent with public write-ups. |
-| Privilege escalation | Found `/usr/bin/python2.7` in SUID output and used `os.execl(..., "-p")`. | Public write-ups use the same SUID Python technique. | The key detail is that the interpreter must actually have SUID set and be executable. `whoami` showing `root` is useful confirmation; `id` can also distinguish real UID from effective UID. |
-| Flag value | Screenshots show the user and root flag strings listed above. | Public examples may display different strings because flags are instance-specific or because write-ups use placeholders. | Use the flags from your own deployed target; do not copy flag strings from another person's walkthrough. |
-
-Public references checked:
-
-- [Farhansec — RootMe write-up](https://github.com/farhansec/CTF-Writeups/blob/main/TryHackme/rootme_writeup.md) — includes `.phtml`, `www-data`, and SUID Python.
-- [HackIndex — RootMe write-up](https://hackindex.io/writeups/rootme) — documents the upload panel and Python SUID escalation.
-- [GTFOBins — Python SUID](https://gtfobins.github.io/gtfobins/python/#suid) — reference for the SUID technique.
-
-## 14. Tools used
+## 13. Tools used
 
 - **Nmap** — service and version enumeration.
 - **Gobuster** — web directory and extension enumeration.
@@ -268,7 +231,7 @@ Public references checked:
 - **PentestMonkey PHP reverse shell** — initial shell payload.
 - **GTFOBins / online research** — understanding the SUID Python escalation path.
 
-## 15. Key takeaways
+## 14. Key takeaways
 
 - A plain homepage does not mean the web application has no useful endpoints. Directory enumeration can reveal functionality that is not linked from the home page.
 - A file-upload feature combined with a publicly accessible upload directory deserves careful testing.
@@ -277,4 +240,4 @@ Public references checked:
 - Always enumerate SUID binaries after obtaining a low-privilege shell. Interpreters such as Python should not ordinarily be SUID-root.
 - Verify each stage: confirm the reverse shell's user, identify the unusual SUID binary, and verify the resulting privileges before reading the final flag.
 
-**RootMe completed — Hack | Learn | Secure.**
+**RootMe completed**
