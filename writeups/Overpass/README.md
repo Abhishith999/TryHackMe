@@ -86,7 +86,7 @@ I opened `http://overpass.thm` and read the text on the homepage. The website de
 
 ![Overpass homepage](screenshots/overpass-2.png)
 
-I inspected the page text/source and noticed a hint referring to a Roman encryption technique. I searched for the clue and found the **Caesar cipher**, which is associated with Julius Caesar. I kept this clue in mind while continuing to explore the website.
+I inspected the page source and noticed a hint referring to a Roman encryption technique. I searched for Roman encryption technique online and found the **Caesar cipher**. I kept this clue in mind while continuing to explore the website.
 
 ![Encryption hint in the page source](screenshots/overpass-3.png)
 
@@ -102,7 +102,7 @@ The Downloads page provided the application and its source code, so I downloaded
 
 ![Downloads page](screenshots/overpass-5.png)
 
-I inspected the source code and found that the application used **ROT47** to transform the stored password data. The Roman-related clue had led me to research the Caesar cipher, but the code showed that this application used ROT47. They are related in the broad sense that both rotate characters, but they are not the same algorithm.
+I inspected the source code and found that the application used **ROT47** to transform the stored password data.
 
 ROT47 is reversible obfuscation, not secure encryption. Anyone who knows the method can decode the data without needing a secret key.
 
@@ -114,9 +114,9 @@ I ran the downloaded application to understand its available features. It allowe
 
 Next, I checked the local `~/.overpass` file, where the application stored its data. The values were encoded. I decoded them with ROT47 and confirmed that the result matched the algorithm I had identified in the source code.
 
+![Stored data in ~/.overpass](screenshots/overpass-9.png)
 ![Decoded password-manager data](screenshots/overpass-8.png)
 
-![Stored data in ~/.overpass](screenshots/overpass-9.png)
 
 This showed that the password manager's local storage could be read and reversed easily. I continued with web enumeration to look for another entry point into the target.
 
