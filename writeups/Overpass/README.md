@@ -242,21 +242,11 @@ When the root cron job ran, it requested `downloads/src/buildscript.sh` from my 
 
 # 10. What I Learned
 
-### Inspect the source code instead of trusting the claims
+* **SSH RSA Key Passphrase Cracking:** Learned how to extract a crackable hash from an encrypted SSH private key using `ssh2john` and use John the Ripper with a wordlist to recover its passphrase.
 
-The website's text hinted at a Roman encryption technique, but inspecting the downloaded application's source code showed that it used ROT47. Reading the implementation helped me understand how the stored data could be decoded.
+* **Broken Access Control:** Understood how improper authentication and session validation can allow unauthorized access to an admin page. By manually creating the `SessionToken` cookie, I was able to bypass the `/admin` login and access sensitive information.
 
-### Client-side checks are not authentication
-
-The `login.js` code controlled how the browser reacted to the login response. Testing an arbitrary `SessionToken` showed why authentication must be enforced and validated on the server rather than relying on client-side behavior.
-
-### Private-key passphrases can be attacked offline
-
-`ssh2john` converted the RSA private key into a format John could process. John then tested candidate passphrases from a wordlist, allowing me to use the key for SSH access.
-
-### Root cron jobs must not execute untrusted content
-
-The cron job downloaded a script and piped it directly into Bash as root. Because the hostname could be redirected to my machine, I could influence the content that the root job executed.
+* **Privilege Escalation Through DNS Resolution Manipulation:** Learned how an insecure root cron job that downloads and executes a script from `overpass.thm` can be exploited by changing the hostname's IP mapping to a machine I control, serving a malicious script, and obtaining a root shell.
 
 ---
 
