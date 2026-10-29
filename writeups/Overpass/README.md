@@ -1,15 +1,63 @@
-# TryHackMe: Overpass
+# TryHackMe — Overpass
 
-**Difficulty:** Easy  
-**Focus:** Web enumeration, client-side authentication bypass, SSH key passphrase cracking, cron job abuse, and privilege escalation.
+> **Room:** Overpass  
+> **Platform:** TryHackMe  
+> **Difficulty:** Easy  
+> **Focus:** Web enumeration, ROT47, client-side authentication bypass, SSH key passphrase cracking, cron job abuse, Linux privilege escalation
 
-## 1. Introduction
+## Overview
 
-I started the Overpass room by mapping the target IP address to `overpass.thm` in `/etc/hosts`. Then I scanned the target with Nmap and found two open ports: **22 (SSH)** and **80 (HTTP)**. Since the website was accessible, I started by exploring it before moving to the SSH service.
+Overpass is a password-manager-themed room where I moved from exploring the website to analysing the downloadable application, then used a weakness in the admin login flow to obtain an SSH key. After gaining access as `james`, I investigated the scheduled tasks and found a way to make a root cron job execute a script served from my machine.
 
-## 2. Nmap Scan
+My attack path was:
 
-I ran Nmap with default scripts and service-version detection to identify the available services.
+```text
+Nmap
+  │
+  ├── 22/tcp — SSH
+  └── 80/tcp — HTTP
+               │
+               ▼
+       Explore Overpass website
+               │
+               ▼
+      Download app + source code
+               │
+               ▼
+      Identify ROT47 password storage
+               │
+               ▼
+      Gobuster → /admin + login.js
+               │
+               ▼
+       Weak SessionToken handling
+               │
+               ▼
+        James's RSA private key
+               │
+               ▼
+     Crack key passphrase with John
+               │
+               ▼
+         SSH as james → user flag
+               │
+               ▼
+       LinPEAS → root cron job
+               │
+               ▼
+     Redirect overpass.thm to my IP
+               │
+               ▼
+          Root shell → root flag
+```
+
+---
+
+# 1. Reconnaissance
+
+I first added the target IP address to `/etc/hosts` with the hostname `overpass.thm`. This allowed me to access the target using the hostname instead of repeatedly typing the IP address.
+
+I then scanned the target with Nmap:
 
 ```bash
 nmap -sCV overpass.thm -oN nmap_scan.txt
@@ -17,164 +65,217 @@ nmap -sCV overpass.thm -oN nmap_scan.txt
 
 - `-sC` runs Nmap's default scripts.
 - `-sV` attempts to identify service versions.
-- `-oN` saves the output in normal text format.
+- `-oN nmap_scan.txt` saves the output in normal text format.
 
-The scan showed SSH on port 22 and HTTP on port 80. I saved the output as `nmap_scan.txt` for reference.
+The scan showed two open ports:
+
+```text
+22/tcp — SSH
+80/tcp — HTTP
+```
+
+Since I did not have SSH credentials yet, I started by exploring the website on port 80.
 
 ![Nmap scan](screenshots/overpass-1.png)
 
-## 3. Exploring the Website
+---
 
-I opened `http://overpass.thm` and read the page. It described Overpass as a password manager that stores passwords using “military grade” encryption. That made me curious about how the application actually handled passwords.
+# 2. Exploring the Website
+
+I opened `http://overpass.thm` and read the text on the homepage. The website described Overpass as a password manager and made claims about how securely it stored passwords. This made me interested in understanding what the application actually did with the passwords.
 
 ![Overpass homepage](screenshots/overpass-2.png)
 
-I also inspected the page text/source. It included a clue referring to a Roman encryption technique, which led me to research the **Caesar cipher**—a substitution cipher associated with Julius Caesar.
+I inspected the page text/source and noticed a hint referring to a Roman encryption technique. I searched for the clue and found the **Caesar cipher**, which is associated with Julius Caesar. I kept this clue in mind while continuing to explore the website.
 
-![Website encryption hint](screenshots/overpass-3.png)
+![Encryption hint in the page source](screenshots/overpass-3.png)
 
-I continued exploring the site and opened the **About Us** page. I found several usernames there and saved them for reference.
+I then visited the **About Us** page and found several usernames. I saved them for later in `users.txt` and continued exploring.
 
 ![About Us page](screenshots/overpass-4.png)
 
-## 4. Investigating the Downloadable Application
+---
 
-The Downloads page provided the application and its source code, so I downloaded both to understand how the password manager worked.
+# 3. Analysing the Downloadable Password Manager
+
+The Downloads page provided the application and its source code, so I downloaded both. Before trying to exploit anything on the website, I wanted to understand how the password manager worked.
 
 ![Downloads page](screenshots/overpass-5.png)
 
-After reviewing the source code, I found that the application used **ROT47** to transform stored passwords. This was an important distinction from the Caesar-cipher clue on the website: the downloaded application’s code showed ROT47 specifically. ROT47 is a simple character-rotation obfuscation method, not secure password encryption, so anyone who knows the method can reverse it without a secret key.
+I inspected the source code and found that the application used **ROT47** to transform the stored password data. The Roman-related clue had led me to research the Caesar cipher, but the code showed that this application used ROT47. They are related in the broad sense that both rotate characters, but they are not the same algorithm.
 
-![Application source code](screenshots/overpass-6.png)
+ROT47 is reversible obfuscation, not secure encryption. Anyone who knows the method can decode the data without needing a secret key.
 
-I ran the application to understand its features. It allowed me to retrieve a password for a service, set or update a password, delete a password, retrieve all stored passwords, and exit.
+![Password manager source code](screenshots/overpass-6.png)
 
-![Running the application](screenshots/overpass-7.png)
+I ran the downloaded application to understand its available features. It allowed me to retrieve a password for a service, set or update a password, delete a password, retrieve all stored passwords, and exit.
 
-I then checked the local `~/.overpass` file where the application stored its data. The values were encoded rather than securely encrypted. I decoded the values with ROT47 and confirmed that this matched the algorithm I had found in the source code.
+![Running the password manager](screenshots/overpass-7.png)
 
-![Decoded application data](screenshots/overpass-8.png)
+Next, I checked the local `~/.overpass` file, where the application stored its data. The values were encoded. I decoded them with ROT47 and confirmed that the result matched the algorithm I had identified in the source code.
 
-![Stored values in the local file](screenshots/overpass-9.png)
+![Decoded password-manager data](screenshots/overpass-8.png)
 
-## 5. Directory Enumeration
+![Stored data in ~/.overpass](screenshots/overpass-9.png)
 
-Next, I used Gobuster to look for additional website paths and files.
+This showed that the password manager's local storage could be read and reversed easily. I continued with web enumeration to look for another entry point into the target.
+
+---
+
+# 4. Directory Enumeration
+
+I used Gobuster to discover additional paths and files on the website:
 
 ```bash
 gobuster dir -u http://overpass.thm/ -w big.txt -x php,json,js,txt,html,bak --no-error
 ```
 
-The scan revealed several useful paths, including `/aboutus/`, `/downloads/`, `/admin/`, and `login.js`. The `/admin/` path contained an administrator login page, so I investigated that next.
+The results included `/aboutus/`, `/downloads/`, `/admin/`, and `login.js`. The `/admin/` path was particularly interesting because it contained an administrator login page, so I investigated it next.
 
 ![Gobuster results](screenshots/overpass-10.png)
 
-## 6. Investigating the Admin Login
+---
 
-The admin page initially showed a login form. I already had usernames from the About Us page, so I spent some time testing the login. I tried password brute-forcing and common web attacks such as SQL injection and XSS, but those attempts did not get me access.
+# 5. Investigating the Admin Login
+
+I opened `/admin/` and found a login form. Since I had already collected usernames from the About Us page, I spent some time testing the login. I tried password brute-forcing as well as SQL injection and XSS, but none of those attempts gave me access.
 
 ![Admin login page](screenshots/overpass-11.png)
 
-Rather than continuing to guess, I returned to the Gobuster results and inspected `login.js`. The code showed how the page handled the response from `/api/login`: if the response text was exactly `Incorrect credentials`, it displayed an error; otherwise, it stored the response as a `SessionToken` cookie and redirected the browser to `/admin`.
+Instead of continuing to guess, I went back to the Gobuster results and inspected `login.js`. The code showed that the browser sent the username and password to `/api/login`. It then checked the response text: if the response was `Incorrect credentials`, it displayed an error; otherwise, it stored the response in a `SessionToken` cookie and redirected the browser to `/admin`.
 
-This led me to test whether the application actually validated the cookie on the server or simply trusted a cookie supplied by the browser. I set `SessionToken` to an arbitrary value and refreshed the page. The admin area opened, showing that the session/authentication check was not being properly enforced.
+The important point was that this JavaScript controlled what the browser did after receiving the response. I wanted to find out whether the server independently validated the cookie or whether I could supply a cookie myself.
 
-![Relevant login JavaScript](screenshots/overpass-13.png)
+![login.js source code](screenshots/overpass-13.png)
 
-## 7. Retrieving James's SSH Private Key
+I manually set a `SessionToken` cookie to an arbitrary value and refreshed the page. The admin area opened. This indicated that access was not being properly protected by server-side session validation; the application was trusting a client-controlled cookie.
 
-Inside the admin area, I found a note addressed to James and an RSA private key. The note said that James's SSH key was protected by a passphrase, so I saved the key as `james.rsa` and tried to use it for SSH access.
+![Admin area after setting SessionToken](screenshots/overpass-14.png)
 
-![Admin area with the SSH key](screenshots/overpass-14.png)
+---
 
-SSH requested a passphrase, so I converted the key into a format that John the Ripper could process, then used the `rockyou.txt` wordlist to crack it.
+# 6. Retrieving James's SSH Private Key
+
+Inside the admin area, I found a note and an RSA private key associated with James. I saved the key as `james.rsa` and tried using it to connect over SSH. SSH asked for a passphrase, so I could not use the key immediately.
+
+I converted the private key into a hash format that John the Ripper could process, then used the `rockyou.txt` wordlist to try candidate passphrases:
 
 ```bash
 ssh2john james.rsa > james.hash
 john james.hash --wordlist=rockyou.txt
 ```
 
-John recovered the passphrase: `james13`.
+John recovered the passphrase:
 
-![Cracking the key passphrase](screenshots/overpass-15.png)
+```text
+james13
+```
 
-I used the private key and recovered passphrase to log in as `james`.
+![Cracking the RSA key passphrase](screenshots/overpass-15.png)
+
+With the passphrase recovered, I used the private key to log in as `james`:
 
 ```bash
 ssh james@overpass.thm -i james.rsa
 ```
 
-After logging in, I checked the files in James's home directory and read `user.txt` to retrieve the user flag.
+After logging in, I checked James's home directory and read `user.txt` to retrieve the user flag.
 
-```bash
-cat user.txt
-```
+![SSH access and user flag](screenshots/overpass-16.png)
 
-![SSH login and user flag](screenshots/overpass-16.png)
+---
 
-## 8. Privilege Escalation Enumeration
+# 7. Enumerating Privilege-Escalation Paths
 
-With access as `james`, I ran LinPEAS to look for privilege-escalation opportunities. I noticed an interesting scheduled task in the system crontab, so I inspected `/etc/crontab` to understand what it was doing.
+After gaining a shell as `james`, I ran LinPEAS to look for potential privilege-escalation paths. One result stood out: a scheduled task that ran as root and fetched a script from `overpass.thm` before passing it directly to Bash.
 
-The important entry was:
+I inspected `/etc/crontab` and found this entry:
 
 ```cron
 * * * * * root curl overpass.thm/downloads/src/buildscript.sh | bash
 ```
 
-This meant that every minute, a root-owned cron job fetched `buildscript.sh` from `overpass.thm` and immediately passed the downloaded content to Bash. Because the command ran as root, controlling the content it fetched could lead to root-level command execution.
+The job ran every minute. Because the command executed as root, whatever content it downloaded was also executed with root privileges. This made the hostname resolution and the script being fetched important parts of the investigation.
 
-![Cron job in the system crontab](screenshots/overpass-20.png)
+![Cron job in /etc/crontab](screenshots/overpass-20.png)
 
-## 9. Redirecting the Cron Job to My Machine
+---
 
-I investigated how `overpass.thm` resolved on the target and learned that its entry in `/etc/hosts` pointed to the local machine. LinPEAS also helped me identify that the hosts file was writable, which meant I could change the mapping so that `overpass.thm` resolved to my attacking machine instead.
+# 8. Redirecting the Cron Job to My Machine
 
-I then created the same path that the cron job requested—`downloads/src/buildscript.sh`—on my machine. I placed a reverse-shell command in that script, using my own reachable VPN/interface IP address and listener port. The script included with this writeup reflects the callback address used in my lab session; replace it with your own address when reproducing the steps in an authorized lab.
+I investigated how `overpass.thm` resolved on the target and found that it pointed to the target machine itself. I also found that the target's `/etc/hosts` file could be modified. This meant I could change the mapping so that the root cron job's request for `overpass.thm` would reach my machine instead.
 
-I started a Python HTTP server on port 80 to serve the file and a Netcat listener on port 8081 to receive the connection. When the root cron job ran, it fetched my script and executed it as root, giving me a root shell.
+I created the same path that the cron job requested:
+
+```text
+downloads/src/buildscript.sh
+```
+
+I placed a reverse-shell command in that script, using my own reachable VPN/interface IP address and listener port. The callback address in the screenshot and supporting script is specific to my lab session, so it must be replaced with the correct address when reproducing the steps in another authorized lab.
+
+I started a Python HTTP server on port 80 to serve the script:
 
 ```bash
-# In the directory containing downloads/src/buildscript.sh
 python3 -m http.server 80
 ```
 
-In another terminal:
+In another terminal, I started a listener on the port used by the reverse shell:
 
 ```bash
 nc -lvnp 8081
 ```
 
-![Received root shell and root flag](screenshots/overpass-18.png)
+When the root cron job ran, it requested `downloads/src/buildscript.sh` from my machine and piped the response to Bash. The reverse-shell command executed with root privileges, and I received a root shell. I then retrieved the root flag.
 
-## 10. Flags
+![Root shell and root flag](screenshots/overpass-18.png)
 
-| Flag | Result |
+---
+
+# 9. Flags
+
+| Flag | Value |
 |---|---|
 | User flag | `thm{65c1aaf000506e56996822c6281e6bf7}` |
 | Root flag | `thm{7f336f8c359dbac18d54fdd64ea753bb}` |
 
-## 11. Tools Used
+---
 
-- Nmap — service discovery and version detection
-- Gobuster — web directory and file enumeration
-- Browser developer tools — JavaScript inspection and cookie testing
-- `ssh2john` — converting the SSH private key to a John-compatible hash
-- John the Ripper — cracking the SSH key passphrase
-- LinPEAS — local privilege-escalation enumeration
-- Python HTTP server — serving the replacement build script
-- Netcat — receiving the reverse shell
+# 10. What I Learned
 
-## 12. Key Takeaways
+### Inspect the source code instead of trusting the claims
 
-1. **Read the source code.** The website's encryption claim did not match the weak ROT47 method used by the downloaded application.
-2. **Do not trust client-side authentication logic.** A browser cookie should not grant access unless the server validates the session securely.
-3. **Protect private keys.** A stolen SSH key may still be usable if its passphrase is weak enough to crack offline.
-4. **Review scheduled root tasks carefully.** A root cron job that downloads a script and pipes it directly to Bash is dangerous when an attacker can influence hostname resolution or the fetched content.
-5. **File permissions matter.** A writable `/etc/hosts` file allowed me to redirect the hostname used by the root cron job.
+The website's text hinted at a Roman encryption technique, but inspecting the downloaded application's source code showed that it used ROT47. Reading the implementation helped me understand how the stored data could be decoded.
 
-## 13. Summary
+### Client-side checks are not authentication
 
-I started with the two exposed services, explored the password manager and its source code, and used Gobuster to discover the admin page. Inspecting `login.js` helped me identify the weak `SessionToken` handling and access the administrator area. From there, I recovered James's RSA key, cracked its passphrase with John, and obtained SSH access. Finally, LinPEAS led me to a root cron job that trusted a script fetched from `overpass.thm`. By redirecting that hostname to my machine and serving the expected script path, I received a root shell and retrieved the final flag.
+The `login.js` code controlled how the browser reacted to the login response. Testing an arbitrary `SessionToken` showed why authentication must be enforced and validated on the server rather than relying on client-side behavior.
 
-> **Disclaimer:** This writeup documents a TryHackMe training lab. Use these techniques only in environments where you have explicit permission to test.
+### Private-key passphrases can be attacked offline
+
+`ssh2john` converted the RSA private key into a format John could process. John then tested candidate passphrases from a wordlist, allowing me to use the key for SSH access.
+
+### Root cron jobs must not execute untrusted content
+
+The cron job downloaded a script and piped it directly into Bash as root. Because the hostname could be redirected to my machine, I could influence the content that the root job executed.
+
+---
+
+# 11. Tools Used
+
+| Tool | Purpose |
+|---|---|
+| **Nmap** | Port and service enumeration |
+| **Gobuster** | Directory and file enumeration |
+| **Browser developer tools** | Inspecting page source, JavaScript, and cookies |
+| **ROT47 decoder** | Verifying the password manager's storage method |
+| **ssh2john** | Converting the private key into a John-compatible hash |
+| **John the Ripper** | Cracking the SSH key passphrase |
+| **LinPEAS** | Local privilege-escalation enumeration |
+| **Python HTTP server** | Serving the replacement script |
+| **Netcat** | Receiving the reverse shell |
+
+---
+
+## Disclaimer
+
+This writeup documents my work in an authorized TryHackMe lab environment for educational purposes. Do not reproduce these techniques against systems you do not own or have explicit permission to test.
