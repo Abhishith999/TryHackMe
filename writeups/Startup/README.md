@@ -1,10 +1,10 @@
 # TryHackMe: Startup
 
-**Platform:** TryHackMe  
-**Room:** Startup  
-**Difficulty:** Easy  
-**Operating System:** Linux  
-**Focus:** FTP enumeration, web directory discovery, PHP reverse shell, packet analysis, SSH credential reuse, and cron-based privilege escalation.
+> **Platform:** TryHackMe  
+> **Room:** Startup  
+> **Difficulty:** Easy  
+> **Operating System:** Linux  
+> **Focus:** FTP enumeration, web directory discovery, PHP reverse shell, packet analysis, SSH credential reuse, and cron-based privilege escalation.
 
 > This write-up documents my own path through the room. All testing was performed against the authorized TryHackMe target.
 
