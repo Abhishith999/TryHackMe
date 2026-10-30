@@ -1,9 +1,9 @@
 # TryHackMe — Brooklyn Nine-Nine
 
-> **Room:** Brooklyn Nine-Nine
-> **Platform:** TryHackMe
-> **Difficulty:** Easy
-> **Focus:** FTP enumeration, Steganography, StegSeek, SSH access, Linux privilege escalation
+> **Room:** Brooklyn Nine-Nine\
+> **Platform:** TryHackMe\
+> **Difficulty:** Easy\
+> **Focus:** FTP enumeration, Steganography, StegSeek, SSH access, Linux privilege escalation\
 
 ## Overview
 
