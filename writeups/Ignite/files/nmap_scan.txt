@@ -1,0 +1,13 @@
+# Nmap 7.991 scan initiated Sat Oct 31 12:43:37 2026 as: /usr/lib/nmap/nmap --privileged -sC -sV -oN nmap_scan.txt ignite.thm
+Nmap scan report for ignite.thm (10.48.185.208)
+Host is up (0.046s latency).
+Not shown: 999 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+80/tcp open  http    Apache httpd 2.4.18 ((Ubuntu))
+|_http-title: Welcome to FUEL CMS
+| http-robots.txt: 1 disallowed entry 
+|_/fuel/
+|_http-server-header: Apache/2.4.18 (Ubuntu)
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Sat Oct 31 12:43:50 2026 -- 1 IP address (1 host up) scanned in 12.70 seconds
