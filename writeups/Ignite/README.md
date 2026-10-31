@@ -241,8 +241,6 @@ python3 -c 'import pty; pty.spawn("/bin/bash")'
 
 A pseudo-terminal (PTY) makes the shell behave more like a normal terminal session. It improves interactive shell usability, although a few terminal features such as full job control may still require additional terminal settings.
 
-**Can a reverse shell be started by entering a command into the exploit shell?** Yes. That is exactly what happened here. The exploit prompt already allowed remote command execution. I entered the reverse-shell command there; the target executed it and initiated a new connection to my Netcat listener. The Python PTY command was then run inside that connected shell to make it more usable.
-
 ## 9. Post-Exploitation Enumeration and Database Credentials
 
 After upgrading the shell, I ran LinPEAS to help enumerate the machine for interesting files and possible privilege-escalation paths.
@@ -282,8 +280,6 @@ mememe
 ```
 
 The password worked, and I successfully switched to the Linux `root` account.
-
-**Why did this work?** The password in the configuration was intended for the MySQL database's `root` account. The machine also reused that password for the operating-system `root` account. This is credential reuse: a password exposed in one service's configuration provided access to a different account on the same machine.
 
 I moved to the root directory and read the root flag:
 
@@ -329,14 +325,6 @@ b9bbcb33e11b80be759c4e844862482d
 | Netcat | Listening for the reverse-shell connection |
 | LinPEAS | Linux post-exploitation enumeration |
 | Linux commands (`cat`, `su`, `cd`) | Reading files and switching to root |
-
-## References
-
-- [TryHackMe — Ignite](https://tryhackme.com/room/ignite)
-- [MITRE — CVE-2018-16763](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-16763)
-- [Exploit-DB — Fuel CMS 1.4.1 RCE (EDB-47138)](https://www.exploit-db.com/exploits/47138)
-- [Exploit-DB — SearchSploit Manual](https://www.exploit-db.com/searchsploit)
-- [Fuel CMS — Vendor website](https://www.getfuelcms.com/)
 
 ## Disclaimer
 
