@@ -138,10 +138,6 @@ This gave me a username and password to try over SSH.
 
 ![Retrieved web.xml](screenshots/tomghost-5.png)
 
-### Why this worked
-
-Tomcat's AJP connector was exposed on port 8009. Ghostcat abuses the way Tomcat handles AJP requests to read files from the web application. The Metasploit module requested `/WEB-INF/web.xml`, a configuration file that can contain application metadata and, in this room, the credentials needed for SSH access.
-
 ## 4. SSH Access as `skyfuck`
 
 I used the recovered credentials to connect over SSH.
@@ -369,14 +365,6 @@ cat root.txt
 | `gpg2john` | Converting the protected GPG key into a John-compatible hash |
 | John the Ripper | Recovering the GPG key passphrase |
 | GTFOBins | Finding a privilege-escalation technique for `zip` |
-
-## References
-
-- [CVE-2020-1938 — NVD](https://nvd.nist.gov/vuln/detail/CVE-2020-1938)
-- [Rapid7 Metasploit: Apache Tomcat AJP File Read](https://www.rapid7.com/db/modules/auxiliary/admin/http/tomcat_ghostcat/)
-- [Metasploit module source](https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/admin/http/tomcat_ghostcat.rb)
-- [GTFOBins — zip](https://gtfobins.org/gtfobins/zip/)
-- [John the Ripper documentation](https://www.openwall.com/john/doc/)
 
 ## Disclaimer
 
