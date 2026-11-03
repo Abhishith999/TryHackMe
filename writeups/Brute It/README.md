@@ -47,7 +47,7 @@ The scan identified two open ports:
 
 The web server displayed the default Apache page, so I moved on to web directory enumeration.
 
-![Nmap scan](screenshots/01-brute-it-1.png)
+![Nmap scan](screenshots/brute-it-1.png)
 
 ## 2. Web Enumeration
 
@@ -63,13 +63,13 @@ gobuster dir -u http://brute-it.thm -w /usr/share/wordlists/dirb/common.txt
 
 Gobuster discovered the `/admin` directory. I opened it and found a login page.
 
-![Apache default page](screenshots/02-brute-it-2.png)
+![Apache default page](screenshots/brute-it-2.png)
 
-![Admin login page](screenshots/03-brute-it-3.png)
+![Admin login page](screenshots/brute-it-3.png)
 
 I inspected the page source and found a hint indicating that the username was `admin`. With the username identified, I moved on to testing the login form.
 
-![Page source with username hint](screenshots/04-brute-it-4.png)
+![Page source with username hint](screenshots/brute-it-4.png)
 
 ## 3. Brute-Forcing the Admin Login
 
@@ -87,9 +87,9 @@ hydra -l admin -P /usr/share/wordlists/rockyou.txt brute-it.thm http-post-form "
 
 Hydra found a valid password. I used the discovered credentials to log in to the admin page. The page contained a flag and a link to an RSA private key.
 
-![Hydra result](screenshots/05-brute-it-5.png)
+![Hydra result](screenshots/brute-it-5.png)
 
-![Admin page with RSA key link](screenshots/06-brute-it-6.png)
+![Admin page with RSA key link](screenshots/brute-it-6.png)
 
 ## 4. Recovering the SSH Key Passphrase
 
@@ -109,7 +109,7 @@ john hash.txt --wordlist=/usr/share/wordlists/rockyou.txt
 
 John recovered the key's passphrase. I then used the private key to connect to the SSH service as `john`.
 
-![John cracking the SSH key passphrase](screenshots/07-brute-it-7.png)
+![John cracking the SSH key passphrase](screenshots/brute-it-7.png)
 
 ```bash
 chmod 600 rsa
@@ -126,7 +126,7 @@ After logging in, I read `user.txt` and obtained the user flag.
 cat user.txt
 ```
 
-![SSH access and user flag](screenshots/08-brute-it-8.png)
+![SSH access and user flag](screenshots/brute-it-8.png)
 
 ## 5. Reading the Root Flag with Sudo
 
@@ -142,7 +142,7 @@ The output showed that `john` could run `/bin/cat` as root without entering a pa
 sudo cat /root/root.txt
 ```
 
-![Sudo permission and root flag](screenshots/09-brute-it-9.png)
+![Sudo permission and root flag](screenshots/brute-it-9.png)
 
 ## 6. Cracking the Root Password
 
@@ -163,9 +163,9 @@ hashcat -m 1800 root_hash.txt /usr/share/wordlists/rockyou.txt
 
 Hashcat successfully recovered the root password, and I completed the room. The actual hash and password are intentionally not included in this public writeup.
 
-![Shadow file with hashes redacted](screenshots/10-brute-it-10.png)
+![Shadow file with hashes redacted](screenshots/brute-it-10.png)
 
-![Hashcat result with sensitive values redacted](screenshots/11-brute-it-11.png)
+![Hashcat result with sensitive values redacted](screenshots/brute-it-11.png)
 
 ## What I Learned
 
