@@ -17,7 +17,6 @@ headers = {
 }
 
 # Load the candidate passwords from the accompanying wordlist.
-# Run this script from the extracted room folder so this relative path works.
 with open("passwords.txt", "r") as f:
     passwords = [line.strip() for line in f if line.strip()]
 
