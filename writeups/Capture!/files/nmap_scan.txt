@@ -1,0 +1,17 @@
+# Nmap 7.991 scan initiated Thu Nov  5 13:11:17 2026 as: /usr/lib/nmap/nmap --privileged -sC -sV -oN nmap_scan.txt capture.thm
+Nmap scan report for capture.thm (<target_ip>)
+Host is up (0.13s latency).
+Not shown: 998 closed tcp ports (reset)
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.13 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 df:d8:3b:b5:33:bb:48:5a:c9:34:19:3c:ef:b2:d3:6f (RSA)
+|   256 fb:4c:2f:79:fe:2f:51:68:f2:0d:9a:c8:14:e3:e8:60 (ECDSA)
+|_  256 42:44:b2:cb:74:17:f8:13:2f:56:af:8d:17:3d:67:44 (ED25519)
+80/tcp open  http    Werkzeug httpd 2.2.2 (Python 3.8.10)
+|_http-server-header: Werkzeug/2.2.2 Python/3.8.10
+|_http-title: Did not follow redirect to /login
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Thu Nov  5 13:17:14 2026 -- 1 IP address (1 host up) scanned in 356.81 seconds
